@@ -172,9 +172,13 @@ const skills = ['Graphisme', 'Développement web', 'Marketing'];
     .project-visual { min-width: 84vw; }
     .project-skills__list { width: 100%; }
     .next-project { min-height: 18rem; }
-    .lightbox__previous { left: .5rem; }
-    .lightbox__next { right: .5rem; }
-    .lightbox__visual { width: calc(100vw - 2rem); max-width: none; max-height: calc(100dvh - 8rem); }
-    .lightbox__close { top: .75rem; right: .75rem; }
+    .lightbox { padding: 1rem; }
+    .lightbox[open] { grid-template-columns: 3rem minmax(0,1fr) 3rem; grid-template-rows: auto auto; gap: 1rem .75rem; }
+    .lightbox__visual { width: 100%; max-width: none; max-height: calc(100dvh - 10rem); grid-column: 1 / -1; grid-row: 1; border-radius: 1rem; }
+    .lightbox__previous,.lightbox__next { position: static; width: 3rem; height: 3rem; transform: none; font-size: 1.25rem; }
+    .lightbox__previous { grid-column: 1; grid-row: 2; }
+    .lightbox__next { grid-column: 3; grid-row: 2; }
+    .lightbox__caption { grid-column: 2; grid-row: 2; align-self: center; font-size: .9rem; line-height: 1.25; }
+    .lightbox__close { top: .75rem; right: .75rem; width: 2.75rem; height: 2.75rem; }
   }
 </style>

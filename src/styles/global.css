@@ -454,7 +454,12 @@ button:focus-visible {
   }
 
   .hero-title {
-    gap: .35rem
+    gap: .35rem;
+    width: 100%;
+    overflow: visible;
+    font-size: clamp(2.45rem, 10.8vw, 4.75rem);
+    letter-spacing: -.06em;
+    line-height: .94
   }
 
   .hero-title>span:last-child {
@@ -488,6 +493,14 @@ button:focus-visible {
     padding-right: 1.5rem;
     padding-left: 1.5rem;
     text-align: left
+  }
+
+  .footer-name {
+    bottom: 1rem;
+    width: calc(100% - 2rem);
+    font-size: clamp(3rem, 11vw, 5rem);
+    letter-spacing: -.06em;
+    text-align: center;
   }
 }
 

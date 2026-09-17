@@ -12,6 +12,15 @@ const categories = [
   ['Vidéo', 'video'],
 ];
 
+const categoryIcons = {
+  tout: '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>',
+  graphisme: '<path d="M12 3 5 7v10l7 4 7-4V7l-7-4Z"/><path d="m5 7 7 4 7-4M12 11v10"/>',
+  'developpement-web': '<path d="m9 6-6 6 6 6M15 6l6 6-6 6M14 3l-4 18"/>',
+  marketing: '<path d="M4 13v-2l11-5v12L4 13Z"/><path d="M15 9c3 0 5 1 6 3-1 2-3 3-6 3M6 14l1 6h4l-2-5"/>',
+  photo: '<rect x="3" y="6" width="18" height="14" rx="2"/><path d="m8 6 1.5-3h5L16 6"/><circle cx="12" cy="13" r="4"/>',
+  video: '<rect x="3" y="5" width="14" height="14" rx="2"/><path d="m17 10 4-3v10l-4-3v-4Z"/>',
+};
+
 const projects = [
   { title: 'Leafy', category: 'Développement web', filter: 'developpement-web graphisme marketing', href: '/projets/leafy', tone: 'green', size: 'wide' },
   { title: 'Eclips', category: 'Graphisme', filter: 'graphisme marketing', href: '/projets/eclips', tone: 'blue', size: 'wide' },
@@ -45,7 +54,10 @@ const projects = [
         <div class="gallery-controls">
           <div class="category-filter" role="group" aria-label="Filtrer les projets par catégorie">
             {categories.map(([label, value]) => (
-              <button type="button" data-filter={value} aria-pressed={value === 'tout' ? 'true' : 'false'}>{label}</button>
+              <button type="button" data-filter={value} aria-label={label} title={label} aria-pressed={value === 'tout' ? 'true' : 'false'}>
+                <svg viewBox="0 0 24 24" aria-hidden="true" set:html={categoryIcons[value]}></svg>
+                <span>{label}</span>
+              </button>
             ))}
           </div>
 
@@ -77,8 +89,11 @@ const projects = [
       const search = document.querySelector('#project-search');
       const searchControl = document.querySelector('.search-control');
       const searchToggle = document.querySelector('.search-toggle');
+      const categoryFilter = document.querySelector('.category-filter');
       const emptyMessage = document.querySelector('.gallery-empty');
       let activeFilter = 'tout';
+      let searchIsOpen = false;
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       const normalize = (value) => value.toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -119,19 +134,50 @@ const projects = [
         });
       });
 
-      search?.addEventListener('input', () => applyFilters());
-      searchToggle?.addEventListener('click', () => {
-        const expanded = searchToggle.getAttribute('aria-expanded') === 'true';
-        searchToggle.setAttribute('aria-expanded', String(!expanded));
-        searchControl?.classList.toggle('is-open', !expanded);
-        if (!expanded && search instanceof HTMLInputElement) search.focus();
-      });
+      const openSearch = () => {
+        if (searchIsOpen || !(searchControl instanceof HTMLElement) || !(categoryFilter instanceof HTMLElement)) return;
+        searchIsOpen = true;
+        searchToggle?.setAttribute('aria-expanded', 'true');
+        gsap.killTweensOf([searchControl, categoryFilter]);
+        gsap.to(categoryFilter, {
+          opacity: 0,
+          y: -8,
+          duration: reducedMotion ? 0 : .2,
+          ease: 'power2.in',
+          onComplete: () => {
+            gsap.set(categoryFilter, { visibility: 'hidden' });
+            searchControl.classList.add('is-open');
+            gsap.fromTo(searchControl,
+              { opacity: 0, scaleX: .16, transformOrigin: 'right center' },
+              { opacity: 1, scaleX: 1, duration: reducedMotion ? 0 : .38, ease: 'power3.out', onComplete: () => search instanceof HTMLInputElement && search.focus() },
+            );
+          },
+        });
+      };
 
       const closeSearch = () => {
+        if (!searchIsOpen || !(searchControl instanceof HTMLElement) || !(categoryFilter instanceof HTMLElement)) return;
+        searchIsOpen = false;
         searchToggle?.setAttribute('aria-expanded', 'false');
-        searchControl?.classList.remove('is-open');
         if (search instanceof HTMLInputElement) search.blur();
+        gsap.killTweensOf([searchControl, categoryFilter]);
+        gsap.to(searchControl, {
+          opacity: 0,
+          scaleX: .16,
+          transformOrigin: 'right center',
+          duration: reducedMotion ? 0 : .25,
+          ease: 'power2.in',
+          onComplete: () => {
+            searchControl.classList.remove('is-open');
+            gsap.set(searchControl, { clearProps: 'opacity,transform,transformOrigin' });
+            gsap.set(categoryFilter, { visibility: 'visible' });
+            gsap.fromTo(categoryFilter, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: reducedMotion ? 0 : .32, ease: 'power3.out', clearProps: 'opacity,transform,visibility' });
+          },
+        });
       };
+
+      search?.addEventListener('input', () => applyFilters());
+      searchToggle?.addEventListener('click', () => searchIsOpen ? closeSearch() : openSearch());
 
       document.addEventListener('pointerdown', (event) => {
         if (searchControl instanceof HTMLElement && !searchControl.contains(event.target)) closeSearch();
@@ -142,7 +188,7 @@ const projects = [
       });
 
       applyFilters(false);
-      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (!reducedMotion) {
         gsap.from('.gallery-heading > h1', { yPercent: 80, opacity: 0, duration: .9, ease: 'power3.out' });
         gsap.from('.gallery-controls', { y: 22, opacity: 0, duration: .7, delay: .2, ease: 'power3.out' });
         gsap.from('.gallery-item:not([hidden])', { y: 45, opacity: 0, duration: .65, stagger: .06, delay: .25, ease: 'power3.out' });
@@ -156,16 +202,17 @@ const projects = [
   .gallery-main { padding:clamp(9rem,15vw,15rem) var(--gutter) clamp(6rem,10vw,10rem); }
   .gallery-heading { margin-bottom:clamp(7rem,14vw,14rem); }
   .gallery-heading h1 { overflow:hidden; font-family:var(--font-display); font-size:clamp(4.5rem,9vw,8.5rem); font-weight:700; letter-spacing:-.055em; line-height:.9; text-transform:uppercase; }
-  .gallery-controls { --control-height:3.25rem; display:flex; align-items:center; gap:.75rem; margin-top:clamp(2rem,4vw,3.5rem); }
-  .category-filter { display:flex; height:var(--control-height); align-items:center; gap:.15rem; padding:.35rem .55rem; border-radius:16px; background:rgba(206,206,206,.58); backdrop-filter:blur(10px); }
-  .category-filter button { padding:.45rem .65rem; border:0; border-radius:10px; color:var(--ink); background:transparent; font-family:var(--font-body); font-size:.78rem; font-weight:500; cursor:pointer; white-space:nowrap; transition:color .25s ease,background .25s ease; }
+  .gallery-controls { position:relative; --control-height:3.25rem; display:flex; align-items:center; gap:.75rem; margin-top:clamp(2rem,4vw,3.5rem); }
+  .category-filter { display:flex; height:var(--control-height); align-items:center; gap:.15rem; padding:.35rem .55rem; border-radius:16px; background:rgba(206,206,206,.58); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+  .category-filter button { display:grid; place-items:center; padding:.45rem .65rem; border:0; border-radius:10px; color:var(--ink); background:transparent; font-family:var(--font-body); font-size:.78rem; font-weight:500; cursor:pointer; white-space:nowrap; transition:color .25s ease,background .25s ease; }
+  .category-filter button svg { display:none; width:1.3rem; height:1.3rem; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
   .category-filter button:hover { background:rgba(255,255,255,.45); }
   .category-filter button[aria-pressed='true'] { color:white; background:var(--green); }
   .search-control { position:relative; display:flex; width:var(--control-height); height:var(--control-height); align-items:center; flex-direction:row-reverse; border-radius:16px; background:rgba(206,206,206,.58); overflow:hidden; transition:width .35s ease; }
-  .search-control.is-open { width:clamp(13rem,23vw,20rem); }
+  .search-control.is-open { position:absolute; z-index:2; inset:0; width:100%; height:100%; border:1px solid rgba(255,255,255,.3); background:rgba(206,206,206,.5); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
   .search-control label { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
   .search-control input { width:0; min-width:0; padding:0; border:0; outline:0; background:transparent; font:inherit; opacity:0; transition:width .35s ease,padding .35s ease,opacity .2s ease; }
-  .search-control.is-open input { width:calc(100% - var(--control-height)); padding:0 0 0 1rem; opacity:1; }
+  .search-control.is-open input { width:calc(100% - var(--control-height)); height:100%; padding:0 .75rem 0 1rem; opacity:1; }
   .search-toggle { display:grid; width:var(--control-height); height:var(--control-height); flex:0 0 auto; place-items:center; border:0; background:transparent; cursor:pointer; }
   .search-toggle svg { width:1.35rem; fill:none; stroke:currentColor; stroke-linecap:round; stroke-width:1.8; }
   .projects-mosaic { display:grid; grid-auto-flow:dense; grid-auto-rows:clamp(13rem,18.5vw,22rem); grid-template-columns:repeat(6,minmax(0,1fr)); gap:clamp(1rem,2vw,1.8rem); }
@@ -175,11 +222,12 @@ const projects = [
   .gallery-empty { padding:6rem 0; color:rgba(8,11,9,.58); font-size:1.1rem; text-align:center; }
 
   @media (max-width:900px) {
-    .gallery-controls { align-items:stretch; flex-direction:column; }
-    .category-filter { width:100%; overflow-x:auto; }
-    .search-control { align-self:flex-start; flex-direction:row; }
-    .search-control.is-open { width:100%; }
-    .search-control.is-open input { width:100%; padding:0 1rem 0 0; }
+    .gallery-controls { align-items:center; flex-direction:row; gap:.5rem; }
+    .category-filter { width:auto; min-width:0; height:var(--control-height); flex:1 1 auto; gap:.1rem; padding:.3rem; overflow:visible; }
+    .category-filter button { min-width:0; flex:1 1 0; padding:.35rem; }
+    .category-filter button span { display:none; }
+    .category-filter button svg { display:block; }
+    .search-control { flex:0 0 var(--control-height); align-self:flex-start; flex-direction:row; }
     .projects-mosaic { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .projects-mosaic { grid-auto-rows:clamp(14rem,38vw,21rem); }
     .gallery-item,.gallery-item--wide { grid-column:span 1; }
@@ -188,7 +236,10 @@ const projects = [
   @media (max-width:580px) {
     .gallery-main { padding-top:8rem; }
     .gallery-heading { margin-bottom:5rem; }
+    .gallery-controls { --control-height:3rem; }
+    .category-filter button svg { width:1.15rem; height:1.15rem; }
     .projects-mosaic { grid-template-columns:1fr; }
     .projects-mosaic { grid-auto-rows:70vw; }
   }
+
 </style>
