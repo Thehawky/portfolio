@@ -1,0 +1,153 @@
+---
+const {
+  title,
+  category,
+  href = "/projets",
+  image,
+  tone = "green",
+  layout = "carousel",
+} = Astro.props;
+---
+
+<a
+  class={`project-card project-card--${tone} project-card--${layout}${image ? " project-card--has-image" : ""}`}
+  href={href}
+>
+  <div class="project-card__visual">
+    {
+      image ? (
+        <img src={image} alt="" loading="lazy" />
+      ) : (
+        <span aria-hidden="true">{title.slice(0, 2)}</span>
+      )
+    }
+  </div>
+  <div class="project-card__overlay">
+    <span><small>{category}</small><strong>{title}</strong></span>
+    <span class="project-card__arrow" aria-hidden="true">↗</span>
+  </div>
+</a>
+
+<style>
+  .project-card {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: clamp(1rem, 2vw, 1.6rem);
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .project-card--carousel {
+    width: auto;
+    max-width: none;
+    height: auto;
+    min-width: clamp(17rem, 38vw, 34rem);
+    aspect-ratio: 1.45/1;
+    scroll-snap-align: start;
+  }
+  .project-card__visual {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: #d8ddd9;
+  }
+  .project-card--green .project-card__visual {
+    background: linear-gradient(145deg, #b8c9bb, #e0e8e2);
+  }
+  .project-card--blue .project-card__visual {
+    background: linear-gradient(145deg, #bfcbd0, #e4eaec);
+  }
+  .project-card--sand .project-card__visual {
+    background: linear-gradient(145deg, #d4d0c6, #ece9e1);
+  }
+  .project-card--has-image .project-card__visual {
+    background: transparent;
+  }
+  .project-card__visual > span {
+    color: rgba(255, 255, 255, 0.45);
+    font-family: var(--font-display);
+    font-size: clamp(6rem, 14vw, 12rem);
+    font-weight: 750;
+    letter-spacing: -0.1em;
+    text-transform: uppercase;
+  }
+  .project-card__visual img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    min-width: 100%;
+    max-width: none;
+    height: 100%;
+    min-height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .project-card__overlay {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 1rem 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.52);
+    border-radius: 1rem;
+    background: rgba(248, 249, 247, 0.82);
+    transform: translateY(calc(100% + 1rem));
+    transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+    backdrop-filter: blur(14px);
+  }
+  .project-card__overlay > span:first-child {
+    display: grid;
+    gap: 0.2rem;
+  }
+  .project-card small {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .project-card strong {
+    font-family: var(--font-display);
+    font-size: clamp(1.25rem, 2.2vw, 1.8rem);
+    text-transform: uppercase;
+  }
+  .project-card__arrow {
+    font-size: 1.6rem;
+    transition: transform 0.35s ease;
+  }
+  .project-card:hover .project-card__overlay,
+  .project-card:focus-visible .project-card__overlay {
+    transform: translateY(0);
+  }
+  .project-card:hover img,
+  .project-card:focus-visible img {
+    transform: scale(1.035);
+  }
+  .project-card:hover .project-card__arrow,
+  .project-card:focus-visible .project-card__arrow {
+    transform: translate(3px, -3px);
+  }
+  .project-card--mosaic {
+    aspect-ratio: auto;
+  }
+  @media (hover: none) {
+    .project-card__overlay {
+      transform: translateY(0);
+    }
+  }
+  @media (max-width: 760px) {
+    .project-card--carousel {
+      min-width: 82vw;
+    }
+  }
+</style>

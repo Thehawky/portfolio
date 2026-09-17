@@ -1,0 +1,194 @@
+---
+import Header from '../../components/header.astro';
+import ProjectCard from '../../components/projectCard.astro';
+import '../../styles/global.css';
+
+const categories = [
+  ['Tout', 'tout'],
+  ['Graphisme', 'graphisme'],
+  ['Développement web', 'developpement-web'],
+  ['Marketing', 'marketing'],
+  ['Photo', 'photo'],
+  ['Vidéo', 'video'],
+];
+
+const projects = [
+  { title: 'Leafy', category: 'Développement web', filter: 'developpement-web graphisme marketing', href: '/projets/leafy', tone: 'green', size: 'wide' },
+  { title: 'Eclips', category: 'Graphisme', filter: 'graphisme marketing', href: '/projets/eclips', tone: 'blue', size: 'wide' },
+  { title: 'Portfolio 2026', category: 'Développement web', filter: 'developpement-web', href: '/projets?projet=portfolio-2026', image: '/Images/image1.png', size: 'standard' },
+  { title: 'Projet 04', category: 'Photo', filter: 'photo', href: '/projets?projet=projet-04', tone: 'sand', size: 'standard' },
+  { title: 'Projet 05', category: 'Vidéo', filter: 'video', href: '/projets?projet=projet-05', tone: 'green', size: 'standard' },
+  { title: 'Projet 06', category: 'Marketing', filter: 'marketing graphisme', href: '/projets?projet=projet-06', tone: 'blue', size: 'wide' },
+  { title: 'Projet 07', category: 'Photo', filter: 'photo graphisme', href: '/projets?projet=projet-07', tone: 'sand', size: 'wide' },
+  { title: 'Projet 08', category: 'Graphisme', filter: 'graphisme', href: '/projets?projet=projet-08', tone: 'blue', size: 'standard' },
+  { title: 'Projet 09', category: 'Vidéo', filter: 'video marketing', href: '/projets?projet=projet-09', tone: 'green', size: 'standard' },
+  { title: 'Projet 10', category: 'Développement web', filter: 'developpement-web', href: '/projets?projet=projet-10', tone: 'sand', size: 'standard' },
+];
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="Galerie des projets de Luca Vuille." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Galerie — Luca Vuille</title>
+  </head>
+  <body class="gallery-page">
+    <Header base="/" />
+    <div class="page-grid" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+
+    <main class="gallery-main">
+      <header class="gallery-heading">
+        <h1>Galerie</h1>
+        <div class="gallery-controls">
+          <div class="category-filter" role="group" aria-label="Filtrer les projets par catégorie">
+            {categories.map(([label, value]) => (
+              <button type="button" data-filter={value} aria-pressed={value === 'tout' ? 'true' : 'false'}>{label}</button>
+            ))}
+          </div>
+
+          <div class="search-control">
+            <label for="project-search">Rechercher un projet</label>
+            <input id="project-search" type="search" placeholder="Rechercher…" autocomplete="off" />
+            <button class="search-toggle" type="button" aria-label="Ouvrir la recherche" aria-expanded="false" aria-controls="project-search">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 5 5"></path></svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <section class="projects-mosaic" aria-label="Tous les projets" aria-live="polite">
+        {projects.map((project) => (
+          <article class={`gallery-item gallery-item--${project.size}`} data-project data-categories={project.filter} data-title={project.title.toLowerCase()}>
+            <ProjectCard title={project.title} category={project.category} href={project.href} image={project.image} tone={project.tone} layout="mosaic" />
+          </article>
+        ))}
+      </section>
+      <p class="gallery-empty" hidden>Aucun projet ne correspond à cette recherche.</p>
+    </main>
+
+    <script>
+      import gsap from 'gsap';
+
+      const filterButtons = [...document.querySelectorAll('[data-filter]')];
+      const projectItems = [...document.querySelectorAll('[data-project]')];
+      const search = document.querySelector('#project-search');
+      const searchControl = document.querySelector('.search-control');
+      const searchToggle = document.querySelector('.search-toggle');
+      const emptyMessage = document.querySelector('.gallery-empty');
+      let activeFilter = 'tout';
+
+      const normalize = (value) => value.toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      const applyFilters = (animate = true) => {
+        const query = search instanceof HTMLInputElement ? normalize(search.value.trim()) : '';
+        let visibleCount = 0;
+
+        projectItems.forEach((item) => {
+          const categories = item.getAttribute('data-categories')?.split(' ') ?? [];
+          const title = normalize(item.getAttribute('data-title') ?? '');
+          const categoryMatch = activeFilter === 'tout' || categories.includes(activeFilter);
+          const searchMatch = !query || title.includes(query);
+          const visible = categoryMatch && searchMatch;
+          item.toggleAttribute('hidden', !visible);
+          if (visible) {
+            visibleCount += 1;
+            if (animate) gsap.fromTo(item, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' });
+          }
+        });
+
+        if (emptyMessage instanceof HTMLElement) emptyMessage.hidden = visibleCount !== 0;
+      };
+
+      const initialFilter = new URLSearchParams(window.location.search).get('filtre');
+      const matchingButton = filterButtons.find((button) => button.getAttribute('data-filter') === initialFilter);
+      if (matchingButton) activeFilter = initialFilter ?? 'tout';
+
+      filterButtons.forEach((button) => {
+        const selected = button.getAttribute('data-filter') === activeFilter;
+        button.setAttribute('aria-pressed', String(selected));
+        button.addEventListener('click', () => {
+          activeFilter = button.getAttribute('data-filter') ?? 'tout';
+          filterButtons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+          const url = new URL(window.location.href);
+          activeFilter === 'tout' ? url.searchParams.delete('filtre') : url.searchParams.set('filtre', activeFilter);
+          history.replaceState({}, '', url);
+          applyFilters();
+        });
+      });
+
+      search?.addEventListener('input', () => applyFilters());
+      searchToggle?.addEventListener('click', () => {
+        const expanded = searchToggle.getAttribute('aria-expanded') === 'true';
+        searchToggle.setAttribute('aria-expanded', String(!expanded));
+        searchControl?.classList.toggle('is-open', !expanded);
+        if (!expanded && search instanceof HTMLInputElement) search.focus();
+      });
+
+      const closeSearch = () => {
+        searchToggle?.setAttribute('aria-expanded', 'false');
+        searchControl?.classList.remove('is-open');
+        if (search instanceof HTMLInputElement) search.blur();
+      };
+
+      document.addEventListener('pointerdown', (event) => {
+        if (searchControl instanceof HTMLElement && !searchControl.contains(event.target)) closeSearch();
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeSearch();
+      });
+
+      applyFilters(false);
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        gsap.from('.gallery-heading > h1', { yPercent: 80, opacity: 0, duration: .9, ease: 'power3.out' });
+        gsap.from('.gallery-controls', { y: 22, opacity: 0, duration: .7, delay: .2, ease: 'power3.out' });
+        gsap.from('.gallery-item:not([hidden])', { y: 45, opacity: 0, duration: .65, stagger: .06, delay: .25, ease: 'power3.out' });
+      }
+    </script>
+  </body>
+</html>
+
+<style>
+  .gallery-page { min-height:100vh; background:radial-gradient(circle at 9% 18%,rgba(216,239,222,.8),transparent 34%),radial-gradient(circle at 90% 13%,rgba(218,230,238,.68),transparent 40%),#fafcfb; }
+  .gallery-main { padding:clamp(9rem,15vw,15rem) var(--gutter) clamp(6rem,10vw,10rem); }
+  .gallery-heading { margin-bottom:clamp(7rem,14vw,14rem); }
+  .gallery-heading h1 { overflow:hidden; font-family:var(--font-display); font-size:clamp(4.5rem,9vw,8.5rem); font-weight:700; letter-spacing:-.055em; line-height:.9; text-transform:uppercase; }
+  .gallery-controls { --control-height:3.25rem; display:flex; align-items:center; gap:.75rem; margin-top:clamp(2rem,4vw,3.5rem); }
+  .category-filter { display:flex; height:var(--control-height); align-items:center; gap:.15rem; padding:.35rem .55rem; border-radius:16px; background:rgba(206,206,206,.58); backdrop-filter:blur(10px); }
+  .category-filter button { padding:.45rem .65rem; border:0; border-radius:10px; color:var(--ink); background:transparent; font-family:var(--font-body); font-size:.78rem; font-weight:500; cursor:pointer; white-space:nowrap; transition:color .25s ease,background .25s ease; }
+  .category-filter button:hover { background:rgba(255,255,255,.45); }
+  .category-filter button[aria-pressed='true'] { color:white; background:var(--green); }
+  .search-control { position:relative; display:flex; width:var(--control-height); height:var(--control-height); align-items:center; flex-direction:row-reverse; border-radius:16px; background:rgba(206,206,206,.58); overflow:hidden; transition:width .35s ease; }
+  .search-control.is-open { width:clamp(13rem,23vw,20rem); }
+  .search-control label { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  .search-control input { width:0; min-width:0; padding:0; border:0; outline:0; background:transparent; font:inherit; opacity:0; transition:width .35s ease,padding .35s ease,opacity .2s ease; }
+  .search-control.is-open input { width:calc(100% - var(--control-height)); padding:0 0 0 1rem; opacity:1; }
+  .search-toggle { display:grid; width:var(--control-height); height:var(--control-height); flex:0 0 auto; place-items:center; border:0; background:transparent; cursor:pointer; }
+  .search-toggle svg { width:1.35rem; fill:none; stroke:currentColor; stroke-linecap:round; stroke-width:1.8; }
+  .projects-mosaic { display:grid; grid-auto-flow:dense; grid-auto-rows:clamp(13rem,18.5vw,22rem); grid-template-columns:repeat(6,minmax(0,1fr)); gap:clamp(1rem,2vw,1.8rem); }
+  .gallery-item { width:100%; max-width:100%; min-width:0; min-height:0; grid-column:span 2; }
+  .gallery-item--wide { grid-column:span 3; }
+  .gallery-item[hidden] { display:none; }
+  .gallery-empty { padding:6rem 0; color:rgba(8,11,9,.58); font-size:1.1rem; text-align:center; }
+
+  @media (max-width:900px) {
+    .gallery-controls { align-items:stretch; flex-direction:column; }
+    .category-filter { width:100%; overflow-x:auto; }
+    .search-control { align-self:flex-start; flex-direction:row; }
+    .search-control.is-open { width:100%; }
+    .search-control.is-open input { width:100%; padding:0 1rem 0 0; }
+    .projects-mosaic { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .projects-mosaic { grid-auto-rows:clamp(14rem,38vw,21rem); }
+    .gallery-item,.gallery-item--wide { grid-column:span 1; }
+  }
+
+  @media (max-width:580px) {
+    .gallery-main { padding-top:8rem; }
+    .gallery-heading { margin-bottom:5rem; }
+    .projects-mosaic { grid-template-columns:1fr; }
+    .projects-mosaic { grid-auto-rows:70vw; }
+  }
+</style>

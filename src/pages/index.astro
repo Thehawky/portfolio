@@ -1,0 +1,132 @@
+---
+import Header from '../components/header.astro';
+import ProjectCard from '../components/projectCard.astro';
+import '../styles/global.css';
+
+const skills = [
+  ['Graphisme', 'graphisme'],
+  ['Développement web', 'developpement-web'],
+  ['Marketing', 'marketing'],
+  ['Photo', 'photo'],
+  ['Vidéo', 'video'],
+];
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="Portfolio de Luca Vuille, médiamaticien." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Luca Vuille — Médiamaticien</title>
+  </head>
+  <body>
+    <Header />
+    <div class="page-grid" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+
+    <main>
+      <section class="section section01" id="accueil" aria-labelledby="hero-title">
+        <h1 id="hero-title" class="hero-title"><span>Luca Vuille</span><span>Médiamaticien</span></h1>
+        <a class="scroll-cue" href="#a-propos" aria-label="Découvrir la suite de la page"><span></span></a>
+      </section>
+
+      <section class="section section02" id="a-propos" aria-labelledby="about-title">
+        <div class="about-portrait" data-portrait>
+          <img src="/Images/portrait-luca.jpg" alt="Portrait de Luca Vuille" />
+          <span class="about-portrait__fallback" aria-hidden="true">LV</span>
+          <span class="orbit-dot" aria-hidden="true"></span>
+        </div>
+        <div class="about-copy reveal-copy">
+          <h2 id="about-title">Qui suis-je&nbsp;?</h2>
+          <p>Médiamaticien curieux et polyvalent, je conçois des expériences visuelles qui relient design, technologie et communication. J’aime transformer une idée en une identité claire, utile et vivante.</p>
+        </div>
+      </section>
+
+      <section class="section section03" id="projets" aria-labelledby="projects-title">
+        <div class="section-heading">
+          <h2 id="projects-title">Projets</h2>
+        </div>
+        <div class="project-carousel" aria-label="Sélection de projets">
+          <div class="project-carousel__track" tabindex="0">
+            <ProjectCard title="Leafy" category="Extension web" tone="green" href="/projets/leafy" />
+            <ProjectCard title="Portfolio 2026" category="Développement web" image="/Images/image1.png" href="/projets?projet=portfolio-2026" />
+            <ProjectCard title="Projet 03" category="Photo & vidéo" tone="blue" href="/projets?projet=projet-03" />
+            <a class="all-projects" href="/projets" aria-label="Voir tous les projets"><span>Voir tous<br />les projets</span><span class="all-projects__arrow" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M8 20h23M23 12l8 8-8 8" /></svg></span></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section04" id="competences" aria-labelledby="skills-title">
+        <div class="section-heading"><h2 id="skills-title">Compétences</h2></div>
+        <div class="skills-list">
+          {skills.map(([label, filter], index) => (
+            <a href={`/projets?filtre=${filter}`} data-skill>
+              <span class="skills-list__index">0{index + 1}</span><span>{label}</span><span class="skills-list__arrow" aria-hidden="true">↗</span>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section class="section section05" id="contact" aria-labelledby="contact-title">
+        <h2 id="contact-title">Un projet ?</h2>
+        <a class="contact-link" href="mailto:lvuille06@gmail.com">lvuille06@gmail.com <span aria-hidden="true">↗</span></a>
+        <div class="footer-name" aria-hidden="true">Luca Vuille</div>
+      </section>
+    </main>
+
+    <script>
+      import gsap from 'gsap';
+      import { ScrollTrigger } from 'gsap/ScrollTrigger';
+      gsap.registerPlugin(ScrollTrigger);
+
+      const portrait = document.querySelector('[data-portrait]');
+      const portraitImage = portrait?.querySelector('img');
+      if (portraitImage instanceof HTMLImageElement) {
+        const showFallback = () => portrait?.classList.add('is-missing');
+        portraitImage.complete && portraitImage.naturalWidth === 0 ? showFallback() : portraitImage.addEventListener('error', showFallback);
+      }
+
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        gsap.from('.hero-title > span', { yPercent: 115, duration: 1.1, stagger: .12, ease: 'power4.out' });
+
+        const orbit = document.querySelector('[data-portrait]');
+        const orbitDot = orbit?.querySelector('.orbit-dot');
+        if (orbit instanceof HTMLElement && orbitDot instanceof HTMLElement) {
+          const finalAngle = 28;
+          const orbitState = { angle: finalAngle - 360 };
+
+          const placeDot = () => {
+            const radius = orbit.offsetWidth / 2 - 1;
+            const radians = orbitState.angle * Math.PI / 180;
+            gsap.set(orbitDot, {
+              top: '50%',
+              left: '50%',
+              x: Math.cos(radians) * radius,
+              y: Math.sin(radians) * radius,
+              xPercent: -50,
+              yPercent: -50,
+            });
+          };
+
+          placeDot();
+          gsap.to(orbitState, {
+            angle: finalAngle,
+            duration: 2.4,
+            delay: .2,
+            ease: 'power2.inOut',
+            onUpdate: placeDot,
+          });
+
+          new ResizeObserver(placeDot).observe(orbit);
+        }
+
+        gsap.utils.toArray('.section-heading, .reveal-copy').forEach((element) => {
+          gsap.from(element, { y: 55, opacity: 0, duration: .9, ease: 'power3.out', scrollTrigger: { trigger: element, start: 'top 84%', once: true } });
+        });
+        gsap.from('.project-card, .all-projects', { x: 80, opacity: 0, duration: .85, stagger: .1, ease: 'power3.out', scrollTrigger: { trigger: '.project-carousel', start: 'top 82%', once: true } });
+        gsap.from('[data-skill]', { y: 28, opacity: 0, duration: .55, stagger: .07, ease: 'power2.out', scrollTrigger: { trigger: '.skills-list', start: 'top 84%', once: true } });
+      }
+    </script>
+  </body>
+</html>
