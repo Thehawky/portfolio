@@ -110,11 +110,17 @@ const skills = ['Graphisme', 'Développement web', 'Marketing'];
       import gsap from 'gsap';
       import { ScrollTrigger } from 'gsap/ScrollTrigger';
       gsap.registerPlugin(ScrollTrigger);
+      ScrollTrigger.config({ ignoreMobileResize: true });
 
       if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const hasFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
         gsap.from('.project-title-wrap > *', { yPercent: 100, opacity: 0, duration: .9, stagger: .08, ease: 'power3.out' });
         gsap.from('.project-about', { y: 45, opacity: 0, duration: .9, delay: .3, ease: 'power3.out' });
-        gsap.from('.project-visual', { x: 70, opacity: 0, duration: .75, stagger: .1, ease: 'power3.out', scrollTrigger: { trigger: '.project-gallery', start: 'top 82%', once: true } });
+        if (hasFinePointer) {
+          gsap.from('.project-visual', { x: 70, opacity: 0, duration: .75, stagger: .1, ease: 'power3.out', force3D: true, clearProps: 'transform,opacity', scrollTrigger: { trigger: '.project-gallery', start: 'top 82%', once: true, fastScrollEnd: true } });
+        } else {
+          gsap.from('.project-visual', { scale: .975, opacity: 0, duration: .6, stagger: .055, ease: 'power2.out', force3D: true, clearProps: 'transform,opacity', scrollTrigger: { trigger: '.project-gallery', start: 'top 88%', once: true, fastScrollEnd: true } });
+        }
         gsap.from('.project-skills__list a', { y: 28, opacity: 0, duration: .55, stagger: .08, ease: 'power2.out', scrollTrigger: { trigger: '.project-skills', start: 'top 78%', once: true } });
       }
     </script>

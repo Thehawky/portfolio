@@ -94,11 +94,8 @@ const { base = '' } = Astro.props;
 
 <style>
   .site-header {
-    position: fixed;
-    z-index: 20;
-    inset: 0;
+    position: static;
     width: 100%;
-    height: auto;
     pointer-events: none;
   }
 
@@ -107,22 +104,24 @@ const { base = '' } = Astro.props;
   }
 
   nav {
+    position: fixed;
+    z-index: 20;
+    top: 20px;
+    left: 50%;
     display: flex;
     width: 40em;
     height: 3em;
     align-items: center;
     justify-content: center;
     gap: 2rem;
-    margin: 20px auto;
+    margin: 0;
     padding: .5em 2em;
     border: 1px solid rgba(255, 255, 255, .3);
     border-radius: 16px;
     background: rgba(206, 206, 206, .5);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
+    transform: translateX(-50%);
     pointer-events: auto;
   }
 
@@ -164,19 +163,21 @@ const { base = '' } = Astro.props;
     }
 
     .site-header {
-      height: auto;
+      position: static;
       pointer-events: none;
     }
 
     .mobile-bar {
-      position: relative;
-      z-index: 2;
+      position: fixed;
+      z-index: 22;
+      top: .75rem;
+      left: 50%;
       display: flex;
       width: calc(100% - 1.5rem);
       height: 3.75rem;
       align-items: center;
       justify-content: space-between;
-      margin: .75rem auto 0;
+      margin: 0;
       padding: .4rem .45rem .4rem 1.2rem;
       border: 1px solid rgba(255, 255, 255, .42);
       border-radius: 18px;
@@ -184,9 +185,7 @@ const { base = '' } = Astro.props;
       box-shadow: 0 10px 28px rgba(15, 47, 27, .08);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      transform: translateZ(0);
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
+      transform: translateX(-50%);
       pointer-events: auto;
     }
 
@@ -229,7 +228,7 @@ const { base = '' } = Astro.props;
 
     nav {
       position: fixed;
-      z-index: 1;
+      z-index: 21;
       inset: .75rem;
       display: flex;
       width: auto;
@@ -246,6 +245,7 @@ const { base = '' } = Astro.props;
         linear-gradient(145deg, rgba(240, 244, 240, .97), rgba(222, 231, 235, .97));
       box-shadow: 0 24px 70px rgba(8, 28, 16, .18);
       visibility: hidden;
+      transform: none;
       pointer-events: none;
       overflow: hidden;
     }

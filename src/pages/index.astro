@@ -79,6 +79,7 @@ const skills = [
       import gsap from 'gsap';
       import { ScrollTrigger } from 'gsap/ScrollTrigger';
       gsap.registerPlugin(ScrollTrigger);
+      ScrollTrigger.config({ ignoreMobileResize: true });
 
       const portrait = document.querySelector('[data-portrait]');
       const portraitImage = portrait?.querySelector('img');
@@ -88,6 +89,7 @@ const skills = [
       }
 
       if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const hasFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
         gsap.from('.hero-title > span', { yPercent: 115, duration: 1.1, stagger: .12, ease: 'power4.out' });
 
         const orbit = document.querySelector('[data-portrait]');
@@ -124,8 +126,20 @@ const skills = [
         gsap.utils.toArray('.section-heading, .reveal-copy').forEach((element) => {
           gsap.from(element, { y: 55, opacity: 0, duration: .9, ease: 'power3.out', scrollTrigger: { trigger: element, start: 'top 84%', once: true } });
         });
-        gsap.from('.project-card, .all-projects', { x: 80, opacity: 0, duration: .85, stagger: .1, ease: 'power3.out', scrollTrigger: { trigger: '.project-carousel', start: 'top 82%', once: true } });
+        if (hasFinePointer) {
+          gsap.from('.project-card, .all-projects', { x: 80, opacity: 0, duration: .85, stagger: .1, ease: 'power3.out', force3D: true, clearProps: 'transform,opacity', scrollTrigger: { trigger: '.project-carousel', start: 'top 82%', once: true, fastScrollEnd: true } });
+        } else {
+          gsap.from('.project-card, .all-projects', { scale: .975, opacity: 0, duration: .6, stagger: .055, ease: 'power2.out', force3D: true, clearProps: 'transform,opacity', scrollTrigger: { trigger: '.project-carousel', start: 'top 88%', once: true, fastScrollEnd: true } });
+        }
         gsap.from('[data-skill]', { y: 28, opacity: 0, duration: .55, stagger: .07, ease: 'power2.out', scrollTrigger: { trigger: '.skills-list', start: 'top 84%', once: true } });
+
+        const contactTimeline = gsap.timeline({
+          scrollTrigger: { trigger: '.section05', start: 'top 82%', once: true },
+        });
+        contactTimeline
+          .from('.section05 h2', { y: 36, opacity: 0, duration: .75, ease: 'power3.out' })
+          .from('.contact-link', { y: 18, opacity: 0, duration: .55, ease: 'power2.out' }, '-=.4')
+          .from('.footer-name', { opacity: 0, letterSpacing: '.01em', duration: 1, ease: 'power2.out' }, '-=.35');
       }
     </script>
   </body>
