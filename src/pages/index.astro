@@ -1,7 +1,10 @@
 ---
 import Header from '../components/header.astro';
 import ProjectCard from '../components/projectCard.astro';
+import { getFeaturedProjects, getProjects } from '../lib/projects';
 import '../styles/global.css';
+
+const featuredProjects = getFeaturedProjects(await getProjects());
 
 const skills = [
   ['Graphisme', 'graphisme'],
@@ -33,7 +36,7 @@ const skills = [
 
       <section class="section section02" id="a-propos" aria-labelledby="about-title">
         <div class="about-portrait" data-portrait>
-          <img src="/Images/portrait-luca.jpg" alt="Portrait de Luca Vuille" />
+          <img src="/Images/Luca Vuille.jpg" alt="Portrait de Luca Vuille" />
           <span class="about-portrait__fallback" aria-hidden="true">LV</span>
           <span class="orbit-dot" aria-hidden="true"></span>
         </div>
@@ -49,9 +52,15 @@ const skills = [
         </div>
         <div class="project-carousel" aria-label="Sélection de projets">
           <div class="project-carousel__track" tabindex="0">
-            <ProjectCard title="Leafy" category="Extension web" tone="green" href="/projets/leafy" />
-            <ProjectCard title="Portfolio 2026" category="Développement web" image="/Images/image1.png" href="/projets?projet=portfolio-2026" />
-            <ProjectCard title="Projet 03" category="Photo & vidéo" tone="blue" href="/projets?projet=projet-03" />
+            {featuredProjects.map((project) => (
+              <ProjectCard
+                title={project.entry.data.title}
+                category={project.entry.data.type}
+                tone={project.tone}
+                image={project.cover}
+                href={project.url}
+              />
+            ))}
             <a class="all-projects" href="/projets" aria-label="Voir tous les projets"><span>Voir tous<br />les projets</span><span class="all-projects__arrow" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M8 20h23M23 12l8 8-8 8" /></svg></span></a>
           </div>
         </div>
@@ -89,7 +98,6 @@ const skills = [
       }
 
       if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        const hasFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
         gsap.from('.hero-title > span', { yPercent: 115, duration: 1.1, stagger: .12, ease: 'power4.out' });
 
         const orbit = document.querySelector('[data-portrait]');
@@ -126,11 +134,19 @@ const skills = [
         gsap.utils.toArray('.section-heading, .reveal-copy').forEach((element) => {
           gsap.from(element, { y: 55, opacity: 0, duration: .9, ease: 'power3.out', scrollTrigger: { trigger: element, start: 'top 84%', once: true } });
         });
-        if (hasFinePointer) {
-          gsap.from('.project-card, .all-projects', { x: 80, opacity: 0, duration: .85, stagger: .1, ease: 'power3.out', force3D: true, clearProps: 'transform,opacity', scrollTrigger: { trigger: '.project-carousel', start: 'top 82%', once: true, fastScrollEnd: true } });
-        } else {
-          gsap.from('.project-card, .all-projects', { scale: .975, opacity: 0, duration: .6, stagger: .055, ease: 'power2.out', force3D: true, clearProps: 'transform,opacity', scrollTrigger: { trigger: '.project-carousel', start: 'top 88%', once: true, fastScrollEnd: true } });
-        }
+        gsap.fromTo('.project-card, .all-projects',
+          { y: 34, autoAlpha: 0 },
+          {
+            y: 0,
+            autoAlpha: 1,
+            duration: .68,
+            stagger: .075,
+            ease: 'power3.out',
+            force3D: true,
+            clearProps: 'transform,opacity,visibility',
+            scrollTrigger: { trigger: '.project-carousel', start: 'top 88%', once: true },
+          },
+        );
         gsap.from('[data-skill]', { y: 28, opacity: 0, duration: .55, stagger: .07, ease: 'power2.out', scrollTrigger: { trigger: '.skills-list', start: 'top 84%', once: true } });
 
         const contactTimeline = gsap.timeline({
