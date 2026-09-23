@@ -1,8 +1,8 @@
 ---
 title: Analyse DeLonghi
 type: Analyse marketing
-description: Étude d’une communication DeLonghi portant sur son message, son public et son univers de marque.
+description: Voici l'analyse d'une vidéo promotionelle de la marque De'Longhi, dans le cadre de notre cours de marketing.
 skills:
   - Marketing
-order: 12
+order: 10
 ---

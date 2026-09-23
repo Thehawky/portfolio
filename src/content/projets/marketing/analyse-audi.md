@@ -1,9 +1,9 @@
 ---
 title: Analyse Audi
 type: Analyse marketing
-description: Analyse d’une campagne Audi et de ses choix de positionnement, de message et de direction visuelle.
+description: Dans cette analyse, le sujet portait sur la publicité d'Audi visant à promouvoir leurs modèles de voitures électriques, dans le magazine Excellence de Arc Info.
 skills:
   - Marketing
   - Graphisme
-order: 10
+order: 11
 ---

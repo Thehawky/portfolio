@@ -1,9 +1,10 @@
 ---
 title: Analyse Barilla
 type: Analyse marketing
-description: Analyse d’une communication Barilla et mise en perspective de ses choix graphiques et marketing.
+description: |-
+ Cette analyse a porté sur un support publicitaire grand format.
 skills:
   - Marketing
   - Graphisme
-order: 11
+order: 12
 ---

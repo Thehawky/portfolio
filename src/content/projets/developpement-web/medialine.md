@@ -9,6 +9,7 @@ description: |-
   Nous avons alors proposé à notre professeur une refonte de la plateforme en HTML / CSS / JS. Après certaines réserves de notre enseignant et un travail important, le rendu final a été unanimement apprécié.
 
   Notre défi a été de mettre au point une méthode d'actualisation aussi simple que possible pour les futurs contributeurs.
+projectUrl: https://mediamatique.cpne.ch/
 skills:
   - Développement web
   - Graphisme

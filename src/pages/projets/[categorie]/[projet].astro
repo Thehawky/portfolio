@@ -20,16 +20,18 @@ type Props = {
 };
 
 const { project, nextProject } = Astro.props as Props;
-const { title, type, description, skills } = project.entry.data;
+const { title, type, description, skills, projectUrl } = project.entry.data;
+const titleWords = title.trim().split(/\s+/);
 const descriptionParagraphs = description.split(/\n\s*\n/).filter(Boolean);
 const metaDescription = description.replace(/\s+/g, ' ').trim();
-const projectImages = project.images.length > 0
-  ? project.images.map((src, index) => ({
-      src,
+const projectMedia = project.media.length > 0
+  ? project.media.map((media, index) => ({
+      ...media,
+      displayRatio: Math.min(3, Math.max(.6, media.ratio)),
       number: String(index + 1).padStart(2, '0'),
-      label: decodeURIComponent(src.split('/').at(-1) ?? `Image ${index + 1}`).replace(/\.[^.]+$/, ''),
+      label: decodeURIComponent(media.src.split('/').at(-1) ?? `Média ${index + 1}`).replace(/\.[^.]+$/, ''),
     }))
-  : [{ src: null, number: '01', label: 'Visuel à venir' }];
+  : [{ src: null, type: 'fallback', number: '01', label: 'Visuel à venir', ratio: 1.45, layoutRatio: 1.45, displayRatio: 1.45 }];
 ---
 
 <!doctype html>
@@ -51,23 +53,44 @@ const projectImages = project.images.length > 0
     <main>
       <section class="project-intro" aria-labelledby="project-title">
         <div class="project-title-wrap">
-          <h1 id="project-title">{title}</h1>
+          <h1 id="project-title" data-fit-project-title aria-label={title}>
+            {titleWords.map((word) => <span aria-hidden="true">{word}</span>)}
+          </h1>
           <p>{type}</p>
         </div>
 
         <div class="project-about">
           <h2>À propos</h2>
           {descriptionParagraphs.map((paragraph) => <p>{paragraph}</p>)}
+          {projectUrl && (
+            <a class="project-link" href={projectUrl} target="_blank" rel="noopener noreferrer">
+              <span>Voir le projet</span><span aria-hidden="true">→</span>
+            </a>
+          )}
         </div>
       </section>
 
-      <section class="project-gallery" aria-label={`Images du projet ${title}`}>
+      <section class="project-gallery" aria-label={`Médias du projet ${title}`}>
         <div class="project-gallery__track" tabindex="0">
-          {projectImages.map((image, index) => (
-            <button class={`project-visual project-visual--${project.tone}`} type="button" data-gallery-item data-index={index} aria-label={`Agrandir : ${image.label}`}>
-              {image.src
-                ? <img src={image.src} alt={`${title} — ${image.label}`} loading={index === 0 ? 'eager' : 'lazy'} />
-                : <span aria-hidden="true">{image.number}</span>}
+          {projectMedia.map((media, index) => (
+            <button
+              class={`project-visual project-visual--${project.tone}${media.src ? ' project-visual--has-media' : ''}`}
+              style={`--image-width-min:${(15.7 * media.displayRatio).toFixed(3)}rem;--image-width-fluid:${(26.2 * media.displayRatio).toFixed(3)}vw;--image-width-max:${(25 * media.displayRatio).toFixed(3)}rem;--image-mobile-min:${(13 * media.displayRatio).toFixed(3)}rem;--image-mobile-fluid:${(49 * media.displayRatio).toFixed(3)}vw;--image-mobile-max:${(20 * media.displayRatio).toFixed(3)}rem`}
+              type="button"
+              data-gallery-item
+              data-index={index}
+              aria-label={`${media.type === 'video' ? 'Lire' : 'Agrandir'} : ${media.label}`}
+            >
+              {media.type === 'image' && media.src && (
+                <img src={media.src} alt={`${title} — ${media.label}`} loading={index === 0 ? 'eager' : 'lazy'} />
+              )}
+              {media.type === 'video' && media.src && (
+                <>
+                  <video src={media.src} preload="metadata" muted playsinline aria-hidden="true"></video>
+                  <span class="project-visual__play" aria-hidden="true">▶</span>
+                </>
+              )}
+              {!media.src && <span class="project-visual__fallback" aria-hidden="true">{media.number}</span>}
             </button>
           ))}
         </div>
@@ -87,7 +110,7 @@ const projectImages = project.images.length > 0
       </section>
 
       <a class="next-project" href={nextProject.url} aria-label={`Projet suivant : ${nextProject.entry.data.title}`}>
-        <span><small>Projet suivant</small><strong>{nextProject.entry.data.title}</strong></span>
+        <span><small>Projet suivant</small><strong data-fit-project-title>{nextProject.entry.data.title}</strong></span>
         <span class="next-project__arrow" aria-hidden="true">↗</span>
       </a>
     </main>
@@ -96,53 +119,111 @@ const projectImages = project.images.length > 0
       <button class="lightbox__close" type="button" aria-label="Fermer l’aperçu">×</button>
       <button class="lightbox__previous" type="button" aria-label="Image précédente">←</button>
       <div class={`lightbox__visual project-visual--${project.tone}`}>
-        <img class="lightbox__image" alt="" />
+        <img class="lightbox__image" alt="" hidden />
+        <video class="lightbox__video" controls playsinline hidden></video>
         <span class="lightbox__fallback" aria-hidden="true">01</span>
       </div>
       <button class="lightbox__next" type="button" aria-label="Image suivante">→</button>
       <p class="lightbox__caption"></p>
     </dialog>
 
-    <script define:vars={{ projectImages, title }}>
+    <script define:vars={{ projectMedia, title }}>
       const dialog = document.querySelector('.lightbox');
       const imageElement = dialog?.querySelector('.lightbox__image');
+      const videoElement = dialog?.querySelector('.lightbox__video');
       const fallback = dialog?.querySelector('.lightbox__fallback');
       const caption = dialog?.querySelector('.lightbox__caption');
       const items = [...document.querySelectorAll('[data-gallery-item]')];
+      const projectTitles = [...document.querySelectorAll('[data-fit-project-title]')];
       let currentIndex = 0;
 
-      const showImage = (index) => {
-        currentIndex = (index + projectImages.length) % projectImages.length;
-        const image = projectImages[currentIndex];
+      const fitProjectTitles = () => {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) return;
+
+        projectTitles.forEach((element) => {
+          if (!(element instanceof HTMLElement)) return;
+          element.style.fontSize = '';
+
+          const style = getComputedStyle(element);
+          const baseSize = Number.parseFloat(style.fontSize);
+          const letterSpacing = Number.parseFloat(style.letterSpacing) || 0;
+          const childWords = [...element.children].map((word) => word.textContent ?? '').filter(Boolean);
+          const words = (childWords.length > 0 ? childWords : (element.textContent ?? '').trim().split(/\s+/))
+            .map((word) => word.toLocaleUpperCase('fr'))
+            .filter(Boolean);
+          context.font = `${style.fontStyle} ${style.fontWeight} ${baseSize}px ${style.fontFamily}`;
+
+          const widestWord = words.reduce((maximum, word) => {
+            const width = context.measureText(word).width + Math.max(0, word.length - 1) * letterSpacing;
+            return Math.max(maximum, width);
+          }, 0);
+          const availableWidth = element.clientWidth;
+
+          if (widestWord > availableWidth && availableWidth > 0) {
+            element.style.fontSize = `${Math.max(28, baseSize * availableWidth / widestWord * .97)}px`;
+          }
+        });
+      };
+
+      let titleResizeFrame = 0;
+      window.addEventListener('resize', () => {
+        cancelAnimationFrame(titleResizeFrame);
+        titleResizeFrame = requestAnimationFrame(fitProjectTitles);
+      });
+      fitProjectTitles();
+      document.fonts?.ready.then(fitProjectTitles);
+
+      const showMedia = (index) => {
+        currentIndex = (index + projectMedia.length) % projectMedia.length;
+        const media = projectMedia[currentIndex];
+        if (videoElement instanceof HTMLVideoElement) {
+          videoElement.pause();
+          videoElement.hidden = media.type !== 'video' || !media.src;
+          if (media.type === 'video' && media.src) {
+            videoElement.src = media.src;
+            videoElement.load();
+          } else {
+            videoElement.removeAttribute('src');
+            videoElement.load();
+          }
+        }
         if (imageElement instanceof HTMLImageElement) {
-          imageElement.hidden = !image.src;
-          imageElement.src = image.src ?? '';
-          imageElement.alt = image.src ? `${title} — ${image.label}` : '';
+          const showImage = media.type === 'image' && Boolean(media.src);
+          imageElement.hidden = !showImage;
+          imageElement.src = showImage ? media.src : '';
+          imageElement.alt = showImage ? `${title} — ${media.label}` : '';
+          if (media.width) imageElement.width = media.width;
+          if (media.height) imageElement.height = media.height;
         }
         if (fallback instanceof HTMLElement) {
-          fallback.hidden = Boolean(image.src);
-          fallback.textContent = image.number;
+          fallback.hidden = Boolean(media.src);
+          fallback.textContent = media.number;
         }
-        if (caption) caption.textContent = image.label;
+        if (caption) caption.textContent = media.label;
       };
 
       items.forEach((item, index) => {
         item.addEventListener('click', () => {
-          showImage(index);
+          showMedia(index);
           dialog?.showModal();
         });
       });
 
       dialog?.querySelector('.lightbox__close')?.addEventListener('click', () => dialog.close());
-      dialog?.querySelector('.lightbox__previous')?.addEventListener('click', () => showImage(currentIndex - 1));
-      dialog?.querySelector('.lightbox__next')?.addEventListener('click', () => showImage(currentIndex + 1));
+      dialog?.querySelector('.lightbox__previous')?.addEventListener('click', () => showMedia(currentIndex - 1));
+      dialog?.querySelector('.lightbox__next')?.addEventListener('click', () => showMedia(currentIndex + 1));
       dialog?.addEventListener('click', (event) => {
         if (event.target === dialog) dialog.close();
       });
+      dialog?.addEventListener('close', () => {
+        if (videoElement instanceof HTMLVideoElement) videoElement.pause();
+      });
       document.addEventListener('keydown', (event) => {
         if (!dialog?.open) return;
-        if (event.key === 'ArrowLeft') showImage(currentIndex - 1);
-        if (event.key === 'ArrowRight') showImage(currentIndex + 1);
+        if (event.key === 'ArrowLeft') showMedia(currentIndex - 1);
+        if (event.key === 'ArrowRight') showMedia(currentIndex + 1);
       });
     </script>
 
@@ -180,23 +261,30 @@ const projectImages = project.images.length > 0
   .project-nav a { display:flex; width:clamp(20rem,34vw,32rem); height:3.2rem; align-items:center; justify-content:center; gap:.75rem; border:1px solid rgba(255,255,255,.35); border-radius:16px; color:var(--ink); background:rgba(206,206,206,.58); font-family:var(--font-display); font-size:.78rem; font-weight:600; text-decoration:none; text-transform:uppercase; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
   .project-nav a>span { font-size:1.3rem; transition:transform .3s ease; }
   .project-nav a:hover>span { transform:translateX(-.35rem); }
-  .project-intro { display:grid; min-height:52rem; grid-template-columns:1fr 1fr; align-items:start; gap:4rem; padding:clamp(7.5rem,12vw,11rem) var(--gutter) 5rem; }
-  .project-title-wrap { min-width:0; }
-  .project-title-wrap h1 { overflow-wrap:anywhere; font-family:var(--font-display); font-size:clamp(4.5rem,8.5vw,8rem); font-weight:700; letter-spacing:-.06em; line-height:.85; text-transform:uppercase; }
-  .project-title-wrap p { margin-top:.7rem; font-size:.8rem; font-weight:650; text-transform:uppercase; }
-  .project-about { align-self:center; max-width:31rem; margin-top:8rem; }
+  .project-intro { display:grid; min-height:52rem; grid-template-columns:minmax(0,1fr) minmax(0,1fr); grid-template-rows:auto 1fr; align-items:start; column-gap:4rem; row-gap:4rem; padding:clamp(7.5rem,12vw,11rem) var(--gutter) 5rem; }
+  .project-title-wrap { width:100%; min-width:0; max-width:100%; grid-column:1; grid-row:1; }
+  .project-title-wrap h1 { display:flex; width:100%; max-width:100%; flex-wrap:wrap; column-gap:.22em; overflow-wrap:normal; word-break:normal; hyphens:none; font-family:var(--font-display); font-size:clamp(4.5rem,8.5vw,8rem); font-weight:700; letter-spacing:-.06em; line-height:.85; text-transform:uppercase; }
+  .project-title-wrap h1>span { display:block; max-width:100%; }
+  .project-title-wrap p { margin-top:.7rem; font-size:clamp(.9rem,1vw,1.05rem); font-weight:650; text-transform:uppercase; }
+  .project-about { max-width:31rem; grid-column:2; grid-row:2; align-self:start; margin-top:0; }
   .project-about h2 { margin-bottom:1.1rem; font-family:var(--font-display); font-size:clamp(1.5rem,2.2vw,2rem); text-transform:uppercase; }
   .project-about p { font-size:clamp(1rem,1.25vw,1.12rem); line-height:1.4; }
   .project-about p+p { margin-top:1rem; }
+  .project-link { display:inline-flex; min-height:3.25rem; align-items:center; justify-content:center; gap:1rem; margin-top:2rem; padding:.75rem 1.25rem; border-radius:16px; color:white; background:var(--green); font-family:var(--font-display); font-size:.9rem; font-weight:600; text-decoration:none; text-transform:uppercase; transition:background .3s ease,transform .3s ease; }
+  .project-link span:last-child { font-size:1.35rem; line-height:1; transition:transform .3s ease; }
+  .project-link:hover { background:#064619; transform:translateY(-2px); }
+  .project-link:hover span:last-child { transform:translateX(.3rem); }
   .project-gallery { overflow:hidden; padding-bottom:clamp(7rem,12vw,12rem); }
   .project-gallery__track { display:flex; gap:clamp(1.5rem,3vw,3rem); overflow-x:auto; padding:1rem 0 4rem clamp(18rem,29vw,32rem); scroll-padding-left:clamp(18rem,29vw,32rem); scroll-snap-type:x mandatory; scrollbar-width:none; }
   .project-gallery__track::-webkit-scrollbar { display:none; }
-  .project-visual { position:relative; min-width:clamp(27rem,45vw,43rem); aspect-ratio:1.72/1; overflow:hidden; border:0; border-radius:1.25rem; box-shadow:0 24px 46px rgba(12,39,24,.09); cursor:zoom-in; scroll-snap-align:start; backface-visibility:hidden; }
+  .project-visual { position:relative; width:clamp(var(--image-width-min),var(--image-width-fluid),var(--image-width-max)); min-width:0; max-width:none; height:clamp(15.7rem,26.2vw,25rem); flex:0 0 auto; overflow:hidden; border:0; border-radius:1.25rem; box-shadow:0 24px 46px rgba(12,39,24,.09); cursor:zoom-in; scroll-snap-align:start; backface-visibility:hidden; }
   .project-visual--green { background:linear-gradient(145deg,#e4eee6,#f9fbf9); }
   .project-visual--blue { background:linear-gradient(145deg,#dce7eb,#fafcfd); }
   .project-visual--sand { background:linear-gradient(145deg,#d9d4c8,#f7f5ef); }
-  .project-visual>img { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:cover; }
-  .project-visual>span,.lightbox__fallback { position:absolute; right:.7rem; bottom:-2.7rem; color:rgba(255,255,255,.55); font-family:var(--font-display); font-size:clamp(7rem,16vw,15rem); font-weight:700; letter-spacing:-.08em; }
+  .project-visual--has-media { background:transparent; box-shadow:none; }
+  .project-visual>img,.project-visual>video { position:absolute; inset:0; display:block; width:100%; height:100%; border-radius:inherit; object-fit:contain; }
+  .project-visual__fallback,.lightbox__fallback { position:absolute; right:.7rem; bottom:-2.7rem; color:rgba(255,255,255,.55); font-family:var(--font-display); font-size:clamp(7rem,16vw,15rem); font-weight:700; letter-spacing:-.08em; }
+  .project-visual__play { position:absolute; z-index:1; top:50%; left:50%; display:grid; width:clamp(3.5rem,5vw,4.5rem); height:clamp(3.5rem,5vw,4.5rem); place-items:center; border:1px solid rgba(255,255,255,.55); border-radius:50%; color:var(--ink); background:rgba(255,255,255,.82); font-size:1.15rem; line-height:1; transform:translate(-50%,-50%); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); pointer-events:none; }
   .project-skills { padding:0 var(--gutter) clamp(8rem,13vw,13rem); }
   .project-skills>h2 { margin-bottom:clamp(2rem,4vw,4rem); color:var(--green); font-family:var(--font-display); font-size:clamp(2.8rem,5.6vw,5.7rem); font-weight:650; letter-spacing:-.045em; line-height:1; text-transform:uppercase; }
   .project-skills__list { width:min(82%,76rem); margin-left:auto; }
@@ -206,15 +294,18 @@ const projectImages = project.images.length > 0
   .project-skills__empty { color:rgba(8,11,9,.58); }
   .next-project { display:flex; min-height:24rem; align-items:center; justify-content:space-between; gap:2rem; padding:clamp(3rem,5vw,5.5rem) var(--gutter); color:white; background:#3fa456; text-decoration:none; transition:background .35s ease; }
   .next-project:hover { background:#2f9147; }
-  .next-project small { display:block; margin-bottom:.4rem; font-size:.75rem; font-weight:600; text-transform:uppercase; }
-  .next-project strong { display:block; overflow-wrap:anywhere; font-family:var(--font-display); font-size:clamp(4.5rem,9vw,8.5rem); letter-spacing:-.055em; line-height:.9; text-transform:uppercase; }
+  .next-project small { display:block; margin-bottom:.4rem; font-size:clamp(.88rem,1vw,1.05rem); font-weight:600; text-transform:uppercase; }
+  .next-project>span:first-child { min-width:0; }
+  .next-project strong { display:block; overflow-wrap:normal; word-break:normal; hyphens:none; font-family:var(--font-display); font-size:clamp(4.5rem,9vw,8.5rem); letter-spacing:-.055em; line-height:.9; text-transform:uppercase; }
   .next-project__arrow { flex:0 0 auto; font-size:clamp(3.5rem,7vw,6.5rem); font-weight:400; line-height:1; transition:transform .35s ease; }
   .next-project:hover .next-project__arrow { transform:translate(.4rem,-.4rem); }
   .lightbox { position:fixed; inset:0; width:100vw; max-width:none; height:100dvh; max-height:none; margin:0; padding:clamp(1rem,4vw,4rem); border:0; background:transparent; color:white; overflow:hidden; }
   .lightbox[open] { display:grid; align-content:center; justify-items:center; gap:1rem; }
   .lightbox::backdrop { background:rgba(4,8,5,.88); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
-  .lightbox__visual { position:relative; width:min(78vw,75rem); max-width:calc(100vw - 10rem); max-height:calc(100dvh - 10rem); aspect-ratio:1.72/1; overflow:hidden; border-radius:1.25rem; }
-  .lightbox__image { display:block; width:100%; height:100%; object-fit:contain; background:rgba(244,248,245,.96); }
+  .lightbox__visual { position:relative; display:grid; width:auto; height:auto; max-width:calc(100vw - 10rem); max-height:calc(100dvh - 8rem); place-items:center; overflow:visible; background:transparent; }
+  .lightbox__image,.lightbox__video { display:block; width:auto; height:auto; max-width:min(84vw,90rem); max-height:calc(100dvh - 8rem); border-radius:.75rem; object-fit:contain; background:transparent; }
+  .lightbox__video { width:min(84vw,90rem); aspect-ratio:16/9; background:#000; }
+  .lightbox__image[hidden],.lightbox__video[hidden],.lightbox__fallback[hidden] { display:none; }
   .lightbox__close { position:fixed; z-index:2; top:1.5rem; right:2rem; display:grid; width:3rem; height:3rem; place-items:center; border:0; border-radius:50%; color:var(--ink); background:white; font-size:2rem; line-height:1; cursor:pointer; }
   .lightbox__previous,.lightbox__next { position:fixed; z-index:2; top:50%; width:3.5rem; height:3.5rem; transform:translateY(-50%); border:0; border-radius:50%; color:var(--ink); background:white; font-size:1.5rem; cursor:pointer; }
   .lightbox__previous { left:2rem; }
@@ -224,17 +315,20 @@ const projectImages = project.images.length > 0
   @media (max-width:760px) {
     .project-nav { top:.9rem; width:calc(100% - 1.5rem); }
     .project-nav a { width:100%; }
-    .project-intro { min-height:47rem; grid-template-columns:1fr; gap:4rem; padding-top:7.5rem; }
+    .project-intro { min-height:47rem; grid-template-columns:1fr; grid-template-rows:auto auto; gap:4rem; padding-top:7.5rem; }
+    .project-title-wrap,.project-about { grid-column:1; grid-row:auto; }
     .project-title-wrap h1 { font-size:clamp(3rem,15vw,5rem); }
     .project-about { align-self:start; margin-top:0; }
     .project-gallery__track { padding-left:var(--gutter); scroll-padding-left:var(--gutter); }
-    .project-visual { min-width:84vw; }
+    .project-visual { width:clamp(var(--image-mobile-min),var(--image-mobile-fluid),var(--image-mobile-max)); min-width:0; max-width:92vw; height:clamp(13rem,49vw,20rem); }
     .project-skills__list { width:100%; }
     .next-project { min-height:18rem; }
     .next-project strong { font-size:clamp(3.2rem,14vw,5.2rem); }
     .lightbox { padding:1rem; }
     .lightbox[open] { grid-template-columns:3rem minmax(0,1fr) 3rem; grid-template-rows:minmax(0,1fr) auto; gap:1rem .75rem; }
-    .lightbox__visual { width:100%; max-width:none; max-height:calc(100dvh - 7rem); aspect-ratio:auto; grid-column:1 / -1; grid-row:1; border-radius:1rem; }
+    .lightbox__visual { width:100%; height:100%; max-width:none; max-height:calc(100dvh - 7rem); grid-column:1 / -1; grid-row:1; }
+    .lightbox__image,.lightbox__video { max-width:100%; max-height:calc(100dvh - 7rem); }
+    .lightbox__video { width:100%; }
     .lightbox__previous,.lightbox__next { position:static; width:3rem; height:3rem; transform:none; font-size:1.25rem; }
     .lightbox__previous { grid-column:1; grid-row:2; }
     .lightbox__next { grid-column:3; grid-row:2; }

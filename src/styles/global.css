@@ -187,17 +187,23 @@ button:focus-visible {
   justify-self: center;
   width: clamp(10rem, 20vw, 19rem);
   aspect-ratio: 1;
-  padding: 2%;
   border: 2px solid var(--ink);
   border-radius: 50%;
 }
 
 .about-portrait img,
 .about-portrait__fallback {
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
+  position: absolute;
+  inset: 4%;
+  width: 92%;
+  height: 92%;
+  border-radius: 50%;
   object-fit: cover;
+  object-position: 50% 50%;
+}
+
+.about-portrait img {
+  display: block;
 }
 
 .about-portrait__fallback {

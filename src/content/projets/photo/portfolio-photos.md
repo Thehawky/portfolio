@@ -1,7 +1,8 @@
 ---
 title: Portfolio Photos
 type: Photographie
-description: Une sélection de travaux photographiques réunissant plusieurs sujets, cadrages et approches visuelles.
+description: |-
+ Voici une sélection de prises de vue réalisés durant nos courts de photographie sur la base de thèmes imposés.
 skills:
   - Photo
 order: 13

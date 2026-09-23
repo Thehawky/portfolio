@@ -16,6 +16,10 @@ const projets = defineCollection({
     order: z.number().int().nonnegative(),
     featured: z.boolean().default(false),
     featuredOrder: z.number().int().nonnegative().optional(),
+    projectUrl: z.union([
+      z.string().trim().url(),
+      z.string().trim().regex(/^\/(?!\/)/, 'Le chemin doit commencer par un seul « / ».')
+    ]).optional(),
   }),
 });
 

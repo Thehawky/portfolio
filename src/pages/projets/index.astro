@@ -58,79 +58,94 @@ const categoryIcons: Record<string, string> = {
       </header>
 
       <section class="projects-mosaic" aria-label="Tous les projets" aria-live="polite">
-        {projects.map((project, index) => (
-          <article
-            class={`gallery-item gallery-item--${index % 5 < 2 ? 'wide' : 'standard'}`}
-            data-project
-            data-categories={project.category}
-            data-title={`${project.entry.data.title} ${project.entry.data.type} ${project.entry.data.skills.join(' ')}`.toLocaleLowerCase('fr')}
-          >
-            <ProjectCard
-              title={project.entry.data.title}
-              category={project.entry.data.type}
-              href={project.url}
-              image={project.cover}
-              tone={project.tone}
-              layout="mosaic"
-            />
-          </article>
-        ))}
+        {projects.map((project) => {
+          const ratio = project.cover?.layoutRatio ?? 1.45;
+          const basis = Math.min(34, Math.max(14, ratio * 16));
+          const maximum = Math.min(42, Math.max(22, ratio * 28));
+          return (
+            <article
+              class="gallery-item"
+              style={`--item-ratio:${ratio};--item-basis:${basis}rem;--item-maximum:${maximum}rem`}
+              data-project
+              data-categories={project.category}
+              data-title={`${project.entry.data.title} ${project.entry.data.type} ${project.entry.data.skills.join(' ')}`.toLocaleLowerCase('fr')}
+            >
+              <ProjectCard
+                title={project.entry.data.title}
+                category={project.entry.data.type}
+                href={project.url}
+                image={project.cover?.src}
+                ratio={ratio}
+                tone={project.tone}
+                layout="mosaic"
+              />
+            </article>
+          );
+        })}
       </section>
       <p class="gallery-empty" hidden>Aucun projet ne correspond à cette recherche.</p>
     </main>
 
+    <script is:inline>
+      (() => {
+        const buttons = [...document.querySelectorAll('[data-filter]')];
+        const projects = [...document.querySelectorAll('[data-project]')];
+        const searchInput = document.querySelector('#project-search');
+        const emptyMessage = document.querySelector('.gallery-empty');
+        const normalize = (value) => value.toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const requestedFilter = new URLSearchParams(window.location.search).get('filtre');
+        let activeFilter = buttons.some((button) => button.dataset.filter === requestedFilter) ? requestedFilter : 'tout';
+
+        const applyFilters = (animate = true) => {
+          const query = searchInput instanceof HTMLInputElement ? normalize(searchInput.value.trim()) : '';
+          let visibleCount = 0;
+
+          projects.forEach((project) => {
+            const categories = (project.dataset.categories ?? '').split(' ');
+            const title = normalize(project.dataset.title ?? '');
+            const visible = (activeFilter === 'tout' || categories.includes(activeFilter)) && (!query || title.includes(query));
+            project.hidden = !visible;
+            project.style.display = visible ? '' : 'none';
+            if (visible) {
+              visibleCount += 1;
+              if (animate && typeof project.animate === 'function') {
+                project.animate(
+                  [{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'translateY(0)' }],
+                  { duration: 400, easing: 'cubic-bezier(.2,.8,.2,1)' },
+                );
+              }
+            }
+          });
+
+          if (emptyMessage instanceof HTMLElement) emptyMessage.hidden = visibleCount !== 0;
+        };
+
+        buttons.forEach((button) => {
+          button.setAttribute('aria-pressed', String(button.dataset.filter === activeFilter));
+          button.addEventListener('click', () => {
+            activeFilter = button.dataset.filter ?? 'tout';
+            buttons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+            const url = new URL(window.location.href);
+            activeFilter === 'tout' ? url.searchParams.delete('filtre') : url.searchParams.set('filtre', activeFilter);
+            history.replaceState({}, '', url);
+            applyFilters();
+          });
+        });
+
+        searchInput?.addEventListener('input', () => applyFilters());
+        applyFilters(false);
+      })();
+    </script>
+
     <script>
       import gsap from 'gsap';
 
-      const filterButtons = [...document.querySelectorAll('[data-filter]')];
-      const projectItems = [...document.querySelectorAll('[data-project]')];
       const search = document.querySelector('#project-search');
       const searchControl = document.querySelector('.search-control');
       const searchToggle = document.querySelector('.search-toggle');
       const categoryFilter = document.querySelector('.category-filter');
-      const emptyMessage = document.querySelector('.gallery-empty');
-      let activeFilter = 'tout';
       let searchIsOpen = false;
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-      const normalize = (value) => value.toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-      const applyFilters = (animate = true) => {
-        const query = search instanceof HTMLInputElement ? normalize(search.value.trim()) : '';
-        let visibleCount = 0;
-
-        projectItems.forEach((item) => {
-          const categories = item.getAttribute('data-categories')?.split(' ') ?? [];
-          const title = normalize(item.getAttribute('data-title') ?? '');
-          const categoryMatch = activeFilter === 'tout' || categories.includes(activeFilter);
-          const searchMatch = !query || title.includes(query);
-          const visible = categoryMatch && searchMatch;
-          item.toggleAttribute('hidden', !visible);
-          if (visible) {
-            visibleCount += 1;
-            if (animate) gsap.fromTo(item, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' });
-          }
-        });
-
-        if (emptyMessage instanceof HTMLElement) emptyMessage.hidden = visibleCount !== 0;
-      };
-
-      const initialFilter = new URLSearchParams(window.location.search).get('filtre');
-      const matchingButton = filterButtons.find((button) => button.getAttribute('data-filter') === initialFilter);
-      if (matchingButton) activeFilter = initialFilter ?? 'tout';
-
-      filterButtons.forEach((button) => {
-        const selected = button.getAttribute('data-filter') === activeFilter;
-        button.setAttribute('aria-pressed', String(selected));
-        button.addEventListener('click', () => {
-          activeFilter = button.getAttribute('data-filter') ?? 'tout';
-          filterButtons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
-          const url = new URL(window.location.href);
-          activeFilter === 'tout' ? url.searchParams.delete('filtre') : url.searchParams.set('filtre', activeFilter);
-          history.replaceState({}, '', url);
-          applyFilters();
-        });
-      });
 
       const openSearch = () => {
         if (searchIsOpen || !(searchControl instanceof HTMLElement) || !(categoryFilter instanceof HTMLElement)) return;
@@ -174,7 +189,6 @@ const categoryIcons: Record<string, string> = {
         });
       };
 
-      search?.addEventListener('input', () => applyFilters());
       searchToggle?.addEventListener('click', () => searchIsOpen ? closeSearch() : openSearch());
 
       document.addEventListener('pointerdown', (event) => {
@@ -185,7 +199,6 @@ const categoryIcons: Record<string, string> = {
         if (event.key === 'Escape') closeSearch();
       });
 
-      applyFilters(false);
       if (!reducedMotion) {
         gsap.from('.gallery-heading > h1', { yPercent: 80, opacity: 0, duration: .9, ease: 'power3.out' });
         gsap.from('.gallery-controls', { y: 22, opacity: 0, duration: .7, delay: .2, ease: 'power3.out' });
@@ -201,21 +214,20 @@ const categoryIcons: Record<string, string> = {
   .gallery-heading { margin-bottom:clamp(7rem,14vw,14rem); }
   .gallery-heading h1 { overflow:hidden; font-family:var(--font-display); font-size:clamp(4.5rem,9vw,8.5rem); font-weight:700; letter-spacing:-.055em; line-height:.9; text-transform:uppercase; }
   .gallery-controls { position:relative; --control-height:3.25rem; display:flex; align-items:center; gap:.75rem; margin-top:clamp(2rem,4vw,3.5rem); }
-  .category-filter { display:flex; height:var(--control-height); align-items:center; gap:.15rem; padding:.35rem .55rem; border-radius:16px; background:rgba(206,206,206,.58); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
-  .category-filter button { display:grid; place-items:center; padding:.45rem .65rem; border:0; border-radius:10px; color:var(--ink); background:transparent; font-family:var(--font-body); font-size:.78rem; font-weight:500; cursor:pointer; white-space:nowrap; transition:color .25s ease,background .25s ease; }
+  .category-filter { position:relative; z-index:2; display:flex; height:var(--control-height); align-items:center; gap:.15rem; padding:.35rem .55rem; border-radius:16px; background:rgba(206,206,206,.58); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); pointer-events:auto; }
+  .category-filter button { position:relative; z-index:1; display:grid; place-items:center; padding:.45rem .65rem; border:0; border-radius:10px; color:var(--ink); background:transparent; font-family:var(--font-body); font-size:.78rem; font-weight:500; cursor:pointer; white-space:nowrap; pointer-events:auto; transition:color .25s ease,background .25s ease; }
   .category-filter button svg { display:none; width:1.3rem; height:1.3rem; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
   .category-filter button:hover { background:rgba(255,255,255,.45); }
   .category-filter button[aria-pressed='true'] { color:white; background:var(--green); }
-  .search-control { position:relative; display:flex; width:var(--control-height); height:var(--control-height); align-items:center; flex-direction:row-reverse; border-radius:16px; background:rgba(206,206,206,.58); overflow:hidden; transition:width .35s ease; }
-  .search-control.is-open { position:absolute; z-index:2; inset:0; width:100%; height:100%; border:1px solid rgba(255,255,255,.3); background:rgba(206,206,206,.5); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+  .search-control { position:relative; z-index:1; display:flex; width:var(--control-height); height:var(--control-height); align-items:center; flex-direction:row-reverse; border-radius:16px; background:rgba(206,206,206,.58); overflow:hidden; transition:width .35s ease; }
+  .search-control.is-open { position:absolute; z-index:4; inset:0; width:100%; height:100%; border:1px solid rgba(255,255,255,.3); background:rgba(206,206,206,.5); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
   .search-control label { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
   .search-control input { width:0; min-width:0; padding:0; border:0; outline:0; background:transparent; font:inherit; opacity:0; transition:width .35s ease,padding .35s ease,opacity .2s ease; }
   .search-control.is-open input { width:calc(100% - var(--control-height)); height:100%; padding:0 .75rem 0 1rem; opacity:1; }
   .search-toggle { display:grid; width:var(--control-height); height:var(--control-height); flex:0 0 auto; place-items:center; border:0; background:transparent; cursor:pointer; }
   .search-toggle svg { width:1.35rem; fill:none; stroke:currentColor; stroke-linecap:round; stroke-width:1.8; }
-  .projects-mosaic { display:grid; grid-auto-flow:dense; grid-auto-rows:clamp(13rem,18.5vw,22rem); grid-template-columns:repeat(6,minmax(0,1fr)); gap:clamp(1rem,2vw,1.8rem); }
-  .gallery-item { width:100%; max-width:100%; min-width:0; min-height:0; grid-column:span 2; }
-  .gallery-item--wide { grid-column:span 3; }
+  .projects-mosaic { display:flex; width:100%; flex-wrap:wrap; align-items:flex-start; justify-content:center; gap:clamp(1rem,2vw,1.8rem); }
+  .gallery-item { width:auto; min-width:min(100%,14rem); max-width:min(100%,var(--item-maximum)); flex:var(--item-ratio) 1 var(--item-basis); aspect-ratio:var(--item-ratio); }
   .gallery-item[hidden] { display:none; }
   .gallery-empty { padding:6rem 0; color:rgba(8,11,9,.58); font-size:1.1rem; text-align:center; }
 
@@ -226,9 +238,7 @@ const categoryIcons: Record<string, string> = {
     .category-filter button span { display:none; }
     .category-filter button svg { display:block; }
     .search-control { flex:0 0 var(--control-height); align-self:flex-start; flex-direction:row; }
-    .projects-mosaic { grid-template-columns:repeat(2,minmax(0,1fr)); }
-    .projects-mosaic { grid-auto-rows:clamp(14rem,38vw,21rem); }
-    .gallery-item,.gallery-item--wide { grid-column:span 1; }
+    .gallery-item { min-width:min(100%,12rem); flex-basis:min(42%,var(--item-basis)); }
   }
 
   @media (max-width:580px) {
@@ -236,8 +246,7 @@ const categoryIcons: Record<string, string> = {
     .gallery-heading { margin-bottom:5rem; }
     .gallery-controls { --control-height:3rem; }
     .category-filter button svg { width:1.15rem; height:1.15rem; }
-    .projects-mosaic { grid-template-columns:1fr; }
-    .projects-mosaic { grid-auto-rows:70vw; }
+    .gallery-item { width:100%; min-width:100%; max-width:100%; flex-basis:100%; aspect-ratio:var(--item-ratio); }
   }
 
 </style>

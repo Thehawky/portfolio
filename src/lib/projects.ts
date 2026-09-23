@@ -1,8 +1,18 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
+import sharp from 'sharp';
 
 export type ProjectEntry = CollectionEntry<'projets'>;
+
+export type ProjectMedia = {
+  src: string;
+  type: 'image' | 'video';
+  width?: number;
+  height?: number;
+  ratio: number;
+  layoutRatio: number;
+};
 
 export type ProjectRecord = {
   entry: ProjectEntry;
@@ -10,8 +20,8 @@ export type ProjectRecord = {
   categoryLabel: string;
   slug: string;
   url: string;
-  images: string[];
-  cover?: string;
+  media: ProjectMedia[];
+  cover?: ProjectMedia;
   tone: 'green' | 'blue' | 'sand';
 };
 
@@ -23,6 +33,14 @@ const compatibleImageExtensions = new Set([
   '.png',
   '.svg',
   '.webp',
+]);
+
+const compatibleVideoExtensions = new Set([
+  '.m4v',
+  '.mov',
+  '.mp4',
+  '.ogv',
+  '.webm',
 ]);
 
 const categoryLabels: Record<string, string> = {
@@ -57,7 +75,7 @@ async function findDirectory(parent: string, wantedSlug: string) {
   }
 }
 
-async function resolveImageDirectory(category: string, project: string) {
+async function resolveMediaDirectory(category: string, project: string) {
   const roots = [
     { disk: path.join(process.cwd(), 'public', 'images_projets'), publicSegments: ['images_projets'] },
     { disk: path.join(process.cwd(), 'public', 'Images', 'images_projets'), publicSegments: ['Images', 'images_projets'] },
@@ -80,17 +98,45 @@ async function resolveImageDirectory(category: string, project: string) {
   return undefined;
 }
 
-async function getProjectImages(category: string, project: string) {
-  const directory = await resolveImageDirectory(category, project);
+async function getProjectMedia(category: string, project: string) {
+  const directory = await resolveMediaDirectory(category, project);
   if (!directory) return [];
 
   try {
     const files = await readdir(directory.disk, { withFileTypes: true });
-    return files
-      .filter((file) => file.isFile() && !file.name.startsWith('.') && compatibleImageExtensions.has(path.extname(file.name).toLocaleLowerCase()))
+    const mediaFiles = files
+      .filter((file) => {
+        if (!file.isFile() || file.name.startsWith('.')) return false;
+        const extension = path.extname(file.name).toLocaleLowerCase();
+        return compatibleImageExtensions.has(extension) || compatibleVideoExtensions.has(extension);
+      })
       .map((file) => file.name)
-      .sort(naturalCollator.compare)
-      .map((file) => encodePublicPath(...directory.publicSegments, file));
+      .sort(naturalCollator.compare);
+
+    return Promise.all(mediaFiles.map(async (file) => {
+      const src = encodePublicPath(...directory.publicSegments, file);
+      const extension = path.extname(file).toLocaleLowerCase();
+      if (compatibleVideoExtensions.has(extension)) {
+        return { src, type: 'video', ratio: 16 / 9, layoutRatio: 16 / 9 } satisfies ProjectMedia;
+      }
+
+      try {
+        const metadata = await sharp(path.join(directory.disk, file)).metadata();
+        const width = metadata.width;
+        const height = metadata.height;
+        const ratio = width && height ? width / height : 1.45;
+        return {
+          src,
+          type: 'image',
+          width,
+          height,
+          ratio,
+          layoutRatio: Math.min(2.1, Math.max(.65, ratio)),
+        } satisfies ProjectMedia;
+      } catch {
+        return { src, type: 'image', ratio: 1.45, layoutRatio: 1.45 } satisfies ProjectMedia;
+      }
+    }));
   } catch {
     return [];
   }
@@ -107,7 +153,7 @@ export async function getProjects(): Promise<ProjectRecord[]> {
   const entries = await getCollection('projets');
   const records = await Promise.all(entries.map(async (entry) => {
     const { category, project } = parseEntryId(entry.id);
-    const images = await getProjectImages(category, project);
+    const media = await getProjectMedia(category, project);
     const toneIndex = [...`${category}/${project}`].reduce((total, character) => total + character.charCodeAt(0), 0) % tones.length;
 
     return {
@@ -116,8 +162,8 @@ export async function getProjects(): Promise<ProjectRecord[]> {
       categoryLabel: getCategoryLabel(category),
       slug: project,
       url: `/projets/${category}/${project}`,
-      images,
-      cover: images[0],
+      media,
+      cover: media.find((item) => item.type === 'image'),
       tone: tones[toneIndex],
     } satisfies ProjectRecord;
   }));

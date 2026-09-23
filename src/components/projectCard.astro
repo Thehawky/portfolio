@@ -4,6 +4,7 @@ const {
   category,
   href = "/projets",
   image,
+  ratio = 1.45,
   tone = "green",
   layout = "carousel",
 } = Astro.props;
@@ -12,6 +13,7 @@ const {
 <a
   class={`project-card project-card--${tone} project-card--${layout}${image ? " project-card--has-image" : ""}`}
   href={href}
+  style={`--card-ratio:${ratio}`}
 >
   <div class="project-card__visual">
     {
@@ -43,11 +45,12 @@ const {
     text-decoration: none;
   }
   .project-card--carousel {
+    flex: 0 0 auto;
     width: auto;
-    max-width: none;
-    height: auto;
-    min-width: clamp(17rem, 38vw, 34rem);
-    aspect-ratio: 1.45/1;
+    height: clamp(17rem, 26vw, 24rem);
+    min-width: clamp(17rem, 24vw, 22rem);
+    max-width: min(78vw, 42rem);
+    aspect-ratio: var(--card-ratio);
     scroll-snap-align: start;
   }
   .project-card__visual {
@@ -86,9 +89,9 @@ const {
     max-width: none;
     height: 100%;
     min-height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     object-position: center;
-    transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: filter 0.45s ease;
   }
   .project-card__overlay {
     position: absolute;
@@ -131,7 +134,7 @@ const {
   }
   .project-card:hover img,
   .project-card:focus-visible img {
-    transform: scale(1.035);
+    filter: saturate(1.06) contrast(1.02);
   }
   .project-card:hover .project-card__arrow,
   .project-card:focus-visible .project-card__arrow {
@@ -147,7 +150,9 @@ const {
   }
   @media (max-width: 760px) {
     .project-card--carousel {
-      min-width: 82vw;
+      height: clamp(14rem, 52vw, 20rem);
+      min-width: 64vw;
+      max-width: 88vw;
     }
   }
 </style>
