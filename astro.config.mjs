@@ -5,7 +5,11 @@ import { defineConfig } from 'astro/config';
 export default defineConfig({
   vite: {
     preview: {
-      allowedHosts: ['portfolio.lucamedia.ch'],
+      allowedHosts: [
+        'portfolio.lucamedia.ch',
+        'lucamedia.ch',
+        'www.lucamedia.ch',
+      ],
     },
   },
 });
