@@ -358,7 +358,7 @@ const projectMedia = project.media.length > 0
 <style>
   .project-page { background:radial-gradient(circle at 12% 28%,rgba(216,239,222,.8),transparent 38%),radial-gradient(circle at 88% 18%,rgba(218,230,238,.65),transparent 42%),#fafcfb; }
   .project-nav { position:fixed; z-index:20; top:1.6rem; left:50%; transform:translateX(-50%); }
-  .project-nav a { display:flex; width:clamp(20rem,34vw,32rem); height:3.2rem; align-items:center; justify-content:center; gap:.75rem; border:1px solid rgba(255,255,255,.35); border-radius:16px; color:var(--ink); background:rgba(206,206,206,.58); font-family:var(--font-display); font-size:.78rem; font-weight:600; text-decoration:none; text-transform:uppercase; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+  .project-nav a { display:flex; width:clamp(20rem,34vw,32rem); height:3.2rem; align-items:center; justify-content:center; gap:.75rem; border:1px solid rgba(255,255,255,.35); border-radius:16px; color:var(--ink); background:rgba(206,206,206,.58); font-family:var(--font-display); font-size:.78rem; font-weight:600; text-decoration:none; text-transform:uppercase; -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); }
   .project-nav a>span { font-size:1.3rem; transition:transform .3s ease; }
   .project-nav a:hover>span { transform:translateX(-.35rem); }
   .project-intro { display:grid; min-height:52rem; grid-template-columns:minmax(0,1fr) minmax(0,1fr); grid-template-rows:auto 1fr; align-items:start; column-gap:4rem; row-gap:4rem; padding:clamp(7.5rem,12vw,11rem) var(--gutter) 5rem; }
@@ -384,7 +384,7 @@ const projectMedia = project.media.length > 0
   .project-visual--has-media { background:transparent; box-shadow:none; }
   .project-visual>img,.project-visual>video { position:absolute; inset:0; display:block; width:100%; height:100%; border-radius:inherit; object-fit:contain; }
   .project-visual__fallback,.lightbox__fallback { position:absolute; right:.7rem; bottom:-2.7rem; color:rgba(255,255,255,.55); font-family:var(--font-display); font-size:clamp(7rem,16vw,15rem); font-weight:700; letter-spacing:-.08em; }
-  .project-visual__play { position:absolute; z-index:1; top:50%; left:50%; display:grid; width:clamp(3.5rem,5vw,4.5rem); height:clamp(3.5rem,5vw,4.5rem); place-items:center; border:1px solid rgba(255,255,255,.55); border-radius:50%; color:var(--ink); background:rgba(255,255,255,.82); font-size:1.15rem; line-height:1; transform:translate(-50%,-50%); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); pointer-events:none; }
+  .project-visual__play { position:absolute; z-index:1; top:50%; left:50%; display:grid; width:clamp(3.5rem,5vw,4.5rem); height:clamp(3.5rem,5vw,4.5rem); place-items:center; border:1px solid rgba(255,255,255,.55); border-radius:50%; color:var(--ink); background:rgba(255,255,255,.82); font-size:1.15rem; line-height:1; transform:translate(-50%,-50%); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); pointer-events:none; }
   .project-skills { padding:0 var(--gutter) clamp(8rem,13vw,13rem); }
   .project-skills>h2 { margin-bottom:clamp(2rem,4vw,4rem); color:var(--green); font-family:var(--font-display); font-size:clamp(2.8rem,5.6vw,5.7rem); font-weight:650; letter-spacing:-.045em; line-height:1; text-transform:uppercase; }
   .project-skills__list { width:min(82%,76rem); margin-left:auto; }
@@ -403,7 +403,7 @@ const projectMedia = project.media.length > 0
   :global(html.lightbox-is-open) { overflow:hidden; overscroll-behavior:none; }
   :global(body.lightbox-is-open) { position:fixed; top:var(--lightbox-scroll-offset); right:0; left:0; width:100%; overflow:hidden; overscroll-behavior:none; }
   .lightbox[open] { display:grid; align-content:center; justify-items:center; gap:1rem; }
-  .lightbox::backdrop { background:rgba(4,8,5,.88); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+  .lightbox::backdrop { background:rgba(4,8,5,.88); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
   .lightbox__visual { position:relative; display:grid; width:auto; height:auto; max-width:calc(100vw - 10rem); max-height:calc(100dvh - 8rem); place-items:center; overflow:visible; background:transparent; touch-action:pan-y; user-select:none; cursor:grab; will-change:transform,opacity; }
   .lightbox__visual.is-swiping { cursor:grabbing; }
   .lightbox__image,.lightbox__video { display:block; width:auto; height:auto; max-width:min(84vw,90rem); max-height:calc(100dvh - 8rem); border-radius:.75rem; object-fit:contain; background:transparent; }

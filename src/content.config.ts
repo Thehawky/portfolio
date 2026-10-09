@@ -14,6 +14,7 @@ const projets = defineCollection({
     description: z.string().trim().min(1).default('Description à venir.'),
     skills: z.array(z.string().trim().min(1)).default([]),
     order: z.number().int().nonnegative(),
+    draft: z.boolean().default(false),
     featured: z.boolean().default(false),
     featuredOrder: z.number().int().nonnegative().optional(),
     projectUrl: z.union([

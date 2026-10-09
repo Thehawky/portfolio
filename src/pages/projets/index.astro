@@ -214,13 +214,13 @@ const categoryIcons: Record<string, string> = {
   .gallery-heading { margin-bottom:clamp(7rem,14vw,14rem); }
   .gallery-heading h1 { overflow:hidden; font-family:var(--font-display); font-size:clamp(4.5rem,9vw,8.5rem); font-weight:700; letter-spacing:-.055em; line-height:.9; text-transform:uppercase; }
   .gallery-controls { position:relative; --control-height:3.25rem; display:flex; align-items:center; gap:.75rem; margin-top:clamp(2rem,4vw,3.5rem); }
-  .category-filter { position:relative; z-index:2; display:flex; height:var(--control-height); align-items:center; gap:.15rem; padding:.35rem .55rem; border-radius:16px; background:rgba(206,206,206,.58); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); pointer-events:auto; }
+  .category-filter { position:relative; z-index:2; display:flex; height:var(--control-height); align-items:center; gap:.15rem; padding:.35rem .55rem; border-radius:16px; background:rgba(206,206,206,.58); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); pointer-events:auto; }
   .category-filter button { position:relative; z-index:1; display:grid; place-items:center; padding:.45rem .65rem; border:0; border-radius:10px; color:var(--ink); background:transparent; font-family:var(--font-body); font-size:.78rem; font-weight:500; cursor:pointer; white-space:nowrap; pointer-events:auto; transition:color .25s ease,background .25s ease; }
   .category-filter button svg { display:none; width:1.3rem; height:1.3rem; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
   .category-filter button:hover { background:rgba(255,255,255,.45); }
   .category-filter button[aria-pressed='true'] { color:white; background:var(--green); }
   .search-control { position:relative; z-index:1; display:flex; width:var(--control-height); height:var(--control-height); align-items:center; flex-direction:row-reverse; border-radius:16px; background:rgba(206,206,206,.58); overflow:hidden; transition:width .35s ease; }
-  .search-control.is-open { position:absolute; z-index:4; inset:0; width:100%; height:100%; border:1px solid rgba(255,255,255,.3); background:rgba(206,206,206,.5); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+  .search-control.is-open { position:absolute; z-index:4; inset:0; width:100%; height:100%; border:1px solid rgba(255,255,255,.3); background:rgba(206,206,206,.5); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
   .search-control label { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
   .search-control input { width:0; min-width:0; padding:0; border:0; outline:0; background:transparent; font:inherit; opacity:0; transition:width .35s ease,padding .35s ease,opacity .2s ease; }
   .search-control.is-open input { width:calc(100% - var(--control-height)); height:100%; padding:0 .75rem 0 1rem; opacity:1; }

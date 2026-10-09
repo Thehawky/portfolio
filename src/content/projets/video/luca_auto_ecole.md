@@ -6,4 +6,5 @@ description: |-
 skills:
   - Vidéo
 order: 1
+draft: true
 ---

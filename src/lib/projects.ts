@@ -150,7 +150,7 @@ function parseEntryId(id: string) {
 }
 
 export async function getProjects(): Promise<ProjectRecord[]> {
-  const entries = await getCollection('projets');
+  const entries = (await getCollection('projets')).filter((entry) => !entry.data.draft);
   const records = await Promise.all(entries.map(async (entry) => {
     const { category, project } = parseEntryId(entry.id);
     const media = await getProjectMedia(category, project);
