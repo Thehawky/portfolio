@@ -11,6 +11,7 @@ skills:
   - Graphisme
   - Développement web
   - Marketing
+  - Vidéo
 order: 1
 featured: true
 featuredOrder: 1

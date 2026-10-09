@@ -131,11 +131,27 @@ const projectMedia = project.media.length > 0
       const dialog = document.querySelector('.lightbox');
       const imageElement = dialog?.querySelector('.lightbox__image');
       const videoElement = dialog?.querySelector('.lightbox__video');
+      const lightboxVisual = dialog?.querySelector('.lightbox__visual');
       const fallback = dialog?.querySelector('.lightbox__fallback');
       const caption = dialog?.querySelector('.lightbox__caption');
       const items = [...document.querySelectorAll('[data-gallery-item]')];
       const projectTitles = [...document.querySelectorAll('[data-fit-project-title]')];
       let currentIndex = 0;
+      let lockedScrollY = 0;
+
+      const lockPageScroll = () => {
+        lockedScrollY = window.scrollY;
+        document.documentElement.classList.add('lightbox-is-open');
+        document.body.classList.add('lightbox-is-open');
+        document.body.style.setProperty('--lightbox-scroll-offset', `-${lockedScrollY}px`);
+      };
+
+      const unlockPageScroll = () => {
+        document.documentElement.classList.remove('lightbox-is-open');
+        document.body.classList.remove('lightbox-is-open');
+        document.body.style.removeProperty('--lightbox-scroll-offset');
+        window.scrollTo(0, lockedScrollY);
+      };
 
       const fitProjectTitles = () => {
         const canvas = document.createElement('canvas');
@@ -204,26 +220,110 @@ const projectMedia = project.media.length > 0
         if (caption) caption.textContent = media.label;
       };
 
+      const navigateMedia = (step) => {
+        showMedia(currentIndex + step);
+        if (lightboxVisual instanceof HTMLElement && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          lightboxVisual.getAnimations().forEach((animation) => animation.cancel());
+          lightboxVisual.animate(
+            [
+              { opacity: .25, transform: `translate3d(${step > 0 ? 3 : -3}rem,0,0)` },
+              { opacity: 1, transform: 'translate3d(0,0,0)' },
+            ],
+            { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' },
+          );
+        }
+      };
+
       items.forEach((item, index) => {
         item.addEventListener('click', () => {
           showMedia(index);
+          lockPageScroll();
           dialog?.showModal();
         });
       });
 
       dialog?.querySelector('.lightbox__close')?.addEventListener('click', () => dialog.close());
-      dialog?.querySelector('.lightbox__previous')?.addEventListener('click', () => showMedia(currentIndex - 1));
-      dialog?.querySelector('.lightbox__next')?.addEventListener('click', () => showMedia(currentIndex + 1));
+      dialog?.querySelector('.lightbox__previous')?.addEventListener('click', () => navigateMedia(-1));
+      dialog?.querySelector('.lightbox__next')?.addEventListener('click', () => navigateMedia(1));
       dialog?.addEventListener('click', (event) => {
         if (event.target === dialog) dialog.close();
       });
       dialog?.addEventListener('close', () => {
         if (videoElement instanceof HTMLVideoElement) videoElement.pause();
+        unlockPageScroll();
       });
+
+      if (lightboxVisual instanceof HTMLElement) {
+        let pointerId = null;
+        let startX = 0;
+        let startY = 0;
+        let startTime = 0;
+
+        const resetSwipePosition = (animate = true) => {
+          const currentTransform = lightboxVisual.style.transform || 'translate3d(0,0,0)';
+          const currentOpacity = lightboxVisual.style.opacity || '1';
+          lightboxVisual.style.removeProperty('transform');
+          lightboxVisual.style.removeProperty('opacity');
+          if (animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            lightboxVisual.animate(
+              [
+                { transform: currentTransform, opacity: currentOpacity },
+                { transform: 'translate3d(0,0,0)', opacity: 1 },
+              ],
+              { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' },
+            );
+          }
+        };
+
+        lightboxVisual.addEventListener('pointerdown', (event) => {
+          if (!dialog?.open || projectMedia.length < 2 || event.button !== 0 || event.target instanceof Element && event.target.closest('video')) return;
+          pointerId = event.pointerId;
+          startX = event.clientX;
+          startY = event.clientY;
+          startTime = performance.now();
+          lightboxVisual.setPointerCapture(event.pointerId);
+          lightboxVisual.classList.add('is-swiping');
+        });
+
+        lightboxVisual.addEventListener('pointermove', (event) => {
+          if (pointerId !== event.pointerId) return;
+          const deltaX = event.clientX - startX;
+          const deltaY = event.clientY - startY;
+          if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
+          event.preventDefault();
+          lightboxVisual.style.transform = `translate3d(${deltaX * .72}px,0,0)`;
+          lightboxVisual.style.opacity = String(Math.max(.45, 1 - Math.abs(deltaX) / Math.max(lightboxVisual.clientWidth, 1)));
+        });
+
+        const finishSwipe = (event) => {
+          if (pointerId !== event.pointerId) return;
+          const deltaX = event.clientX - startX;
+          const deltaY = event.clientY - startY;
+          const elapsed = Math.max(performance.now() - startTime, 1);
+          const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY) * 1.15;
+          const passedDistance = Math.abs(deltaX) > Math.min(90, lightboxVisual.clientWidth * .16);
+          const passedVelocity = Math.abs(deltaX) / elapsed > .45;
+          pointerId = null;
+          lightboxVisual.classList.remove('is-swiping');
+          if (lightboxVisual.hasPointerCapture(event.pointerId)) lightboxVisual.releasePointerCapture(event.pointerId);
+
+          if (isHorizontal && (passedDistance || passedVelocity)) {
+            resetSwipePosition(false);
+            navigateMedia(deltaX < 0 ? 1 : -1);
+          } else {
+            resetSwipePosition();
+          }
+        };
+
+        lightboxVisual.addEventListener('pointerup', finishSwipe);
+        lightboxVisual.addEventListener('pointercancel', finishSwipe);
+        lightboxVisual.addEventListener('dragstart', (event) => event.preventDefault());
+      }
+
       document.addEventListener('keydown', (event) => {
         if (!dialog?.open) return;
-        if (event.key === 'ArrowLeft') showMedia(currentIndex - 1);
-        if (event.key === 'ArrowRight') showMedia(currentIndex + 1);
+        if (event.key === 'ArrowLeft') navigateMedia(-1);
+        if (event.key === 'ArrowRight') navigateMedia(1);
       });
     </script>
 
@@ -300,9 +400,12 @@ const projectMedia = project.media.length > 0
   .next-project__arrow { flex:0 0 auto; font-size:clamp(3.5rem,7vw,6.5rem); font-weight:400; line-height:1; transition:transform .35s ease; }
   .next-project:hover .next-project__arrow { transform:translate(.4rem,-.4rem); }
   .lightbox { position:fixed; inset:0; width:100vw; max-width:none; height:100dvh; max-height:none; margin:0; padding:clamp(1rem,4vw,4rem); border:0; background:transparent; color:white; overflow:hidden; }
+  :global(html.lightbox-is-open) { overflow:hidden; overscroll-behavior:none; }
+  :global(body.lightbox-is-open) { position:fixed; top:var(--lightbox-scroll-offset); right:0; left:0; width:100%; overflow:hidden; overscroll-behavior:none; }
   .lightbox[open] { display:grid; align-content:center; justify-items:center; gap:1rem; }
   .lightbox::backdrop { background:rgba(4,8,5,.88); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
-  .lightbox__visual { position:relative; display:grid; width:auto; height:auto; max-width:calc(100vw - 10rem); max-height:calc(100dvh - 8rem); place-items:center; overflow:visible; background:transparent; }
+  .lightbox__visual { position:relative; display:grid; width:auto; height:auto; max-width:calc(100vw - 10rem); max-height:calc(100dvh - 8rem); place-items:center; overflow:visible; background:transparent; touch-action:pan-y; user-select:none; cursor:grab; will-change:transform,opacity; }
+  .lightbox__visual.is-swiping { cursor:grabbing; }
   .lightbox__image,.lightbox__video { display:block; width:auto; height:auto; max-width:min(84vw,90rem); max-height:calc(100dvh - 8rem); border-radius:.75rem; object-fit:contain; background:transparent; }
   .lightbox__video { width:min(84vw,90rem); aspect-ratio:16/9; background:#000; }
   .lightbox__image[hidden],.lightbox__video[hidden],.lightbox__fallback[hidden] { display:none; }

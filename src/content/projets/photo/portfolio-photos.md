@@ -7,5 +7,5 @@ skills:
   - Photo
 order: 13
 featured: true
-featuredOrder: 3
+featuredOrder: 4
 ---
